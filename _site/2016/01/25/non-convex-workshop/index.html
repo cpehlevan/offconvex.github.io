@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>NIPS 2015 workshop on non-convex optimization &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/01/25/non-convex-workshop/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="NIPS 2015 workshop on non-convex optimization">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/01/25/non-convex-workshop/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>NIPS 2015 workshop on non-convex optimization</h1>
+  <div class="post-meta">
+  
+  Anima Anandkumar &nbsp;&bull;&nbsp;
+  
+  
+  Jan 25, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    12 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>While convex analysis has received much attention by the machine learning community, theoretical analysis of non-convex optimization  is still nascent. This blog as well as the recent <a href="https://sites.google.com/site/nips2015nonconvexoptimization/home">NIPS 2015 workshop on non-convex optimization</a> aim to  accelerate research in this area. Along with <a href="http://cseweb.ucsd.edu/~kamalika/">Kamalika Chaudhuri</a>,  <a href="http://cs.stanford.edu/~pliang/">Percy Liang</a>,  <a href="http://www.ics.uci.edu/~numanare/">Niranjan U Naresh</a>, and <a href="http://web.engr.illinois.edu/~swoh/">Sewoong Oh</a>, <a href="http://newport.eecs.uci.edu/anandkumar/">I</a> was one of the organizers of this  NIPS workshop.</p>
+
+<p>The workshop started with <a href="https://docs.google.com/viewer?a=v&amp;pid=sites&amp;srcid=ZGVmYXVsdGRvbWFpbnxuaXBzMjAxNW5vbmNvbnZleG9wdGltaXphdGlvbnxneDo0OGYxMDE2ZjFhNjlkNGRi">my talk</a> on recent progress and challenges. Many interesting machine learning tasks are non-convex, e.g. maximum likelihood estimation of  latent variable models or training  multi-layer neural networks. As the input dimension grows, the  number of <a href="https://en.wikipedia.org/wiki/Critical_point_(mathematics)">critical points</a> can grow exponentially, making an analysis difficult. In contrast, strictly convex optimization has a unique critical point corresponding to the globally optimal solution.</p>
+
+<h2 id="spectral-and-tensor-methods">Spectral and tensor methods</h2>
+
+<p>I gave an overview of instances where we can provide guarantees for nonconvex optimization. Examples include finding spectral decompositions of matrices and tensors, under a set of conditions. For more details on spectral methods, see <a href="http://www.offconvex.org/2015/12/17/tensor-decompositions/">Rong Ge’s post</a> on this blog. <a href="https://genfaculty.rutgers.edu/kcchen/home">Kevin Chen</a> gave a compelling talk on the superiority of spectral methods in genomics for training hidden Markov models (HMM)  compared to traditional approaches such as <a href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">expectation maximization</a>. In particular, spectral methods provided better biological interpretation, were more robust to class imbalance, and were orders of magnitude faster compared to EM.</p>
+
+<h2 id="avoiding-saddle-points">Avoiding saddle points</h2>
+
+<p>Moving on to more general non-convex optimization, in my <a href="https://docs.google.com/viewer?a=v&amp;pid=sites&amp;srcid=ZGVmYXVsdGRvbWFpbnxuaXBzMjAxNW5vbmNvbnZleG9wdGltaXphdGlvbnxneDo0OGYxMDE2ZjFhNjlkNGRi">talk</a>, I pointed out the difficulty in even converging to a local optimum due to the existence of <em>saddle points</em>. Saddle points are critical points which are not local minima, meaning there exist directions where the objective value decreases (for minimization problems). Saddle points can slow down gradient descent arbitrarily. Alternatively, if  Newton’s method is run, it converges to an arbitrary critical point, and does not  distinguish between a local minimum and a saddle point.</p>
+
+<p>One solution to escape saddle points is to  use the second order <a href="https://en.wikipedia.org/wiki/Hessian_matrix">Hessian</a> information to find the direction of escape when the gradient value is small: the  Hessian eigenvectors with negative eigenvalues provide such directions of escape. See works  <a href="https://www.computer.org/csdl/proceedings/focs/1996/7594/00/75940359.pdf">here</a>,  <a href="http://arxiv.org/abs/1405.4604">here</a> and <a href="http://link.springer.com/article/10.1007%2Fs10107-006-0706-8">here</a>.  A recent  <a href="http://arxiv.org/abs/1503.02101">work</a> surprisingly shows that it is possible to escape saddle points using <em>only</em> first order information based on noisy stochastic gradient descent (SGD). In many applications, this is far cheaper than (approximate) computation of the Hessian eigenvectors.  However, one unresolved issue is handling <em>degenerate</em> saddle points, where there are only positive and zero eigenvalues in the Hessian matrix. For such points, even distinguishing saddle points from local optima is hard. It is also an open problem to establish the presence or absence of  such degenerate saddle points for particular non-convex problems, e.g. in deep learning.</p>
+
+<h2 id="optimization-landscape-for-deep-learning">Optimization landscape for deep learning</h2>
+
+<p><a href="http://yann.lecun.com/">Yann LeCun</a> talked about how the success of deep learning has shown that non-convexity should not be treated as an obstacle. See slides <a href="https://docs.google.com/viewer?a=v&amp;pid=sites&amp;srcid=ZGVmYXVsdGRvbWFpbnxuaXBzMjAxNW5vbmNvbnZleG9wdGltaXphdGlvbnxneDo0YmNiNjM0OGU0NTlmMDll">here</a>. An open problem is to understand the optimization landscape for deep learning. While classical <a href="http://www.dsi.unifi.it/~paolo/ps/pinn.pdf">works</a> have shown the presence of bad local optima even in simple low-dimensional problems, a recent <a href="http://arxiv.org/abs/1412.0233">work</a> argues that the picture is quite different in high dimensions, suggesting that the loss function for training deep neural networks can be approximated as random Gaussian polynomials under a set of (strong) assumptions. A beautiful math <a href="https://projecteuclid.org/euclid.aop/1384957786">paper</a> by Auffinger and Ben Arous characterizes the critical points of such random Gaussian  polynomials, proving that the objective values of all local minima concentrate in a “narrow” band, and  differ significantly from the values attained at saddle points. However, to add a word of caution, this does <em>not</em> imply that a random Gaussian polynomial  is computationally easy to optimize. Current theory does not give a good characterization of the basins of attraction for the local optima, and requires exponential number of initializations to guarantee successful convergence. Moreover, degenerate saddle points can be present, and they are hard to escape from, as I discussed earlier.</p>
+
+<h2 id="everything-old-is-new-again">Everything old is new again</h2>
+
+<p><a href="http://www.stat.yale.edu/~arb4/">Andrew Barron</a> took us back in time, and described how he got interested in neural networks when he discovered that they were training 6-8 layer neural networks back in the 1960’s in his dad’s company. Andrew provided a glimpse of the <a href="http://link.springer.com/article/10.1023%2FA%3A1022650905902">classical results</a>, which bound both the approximation and estimation errors for a shallow neural network (with one hidden layer). The approximation error is related to the  Fourier spectrum of the target function: intuitively, a smoother signal has a lower amount of high frequency content, and has a better approximation error under the class of   networks of a fixed size. The estimation bound gives the risk achieved under a finite amount of training data, but  achieving this  bound is   computationally hard. Andrew then talked about <a href="https://drive.google.com/file/d/0Bxz8_SW7cMO-Z2Nob1htbTNyUG8/view?usp=sharing">his recent efforts</a> to develop computationally efficient algorithms for training neural networks based on the use of generative models of the input. This builds on my  <a href="http://newport.eecs.uci.edu/anandkumar/pubs/NN_GeneralizationBound.pdf">recent work</a> 
+ on training neural networks using tensor methods.</p>
+
+<h2 id="do-not-accept-the-given-non-convex-problem-as-is">Do not accept the given non-convex problem as is</h2>
+
+<p><a href="https://www.cs.princeton.edu/~arora/">Sanjeev Arora</a> argued that unlike traditional computer science theory which has focused on characterizing worst-case problem instances, machine learning offers a much more flexible framework. In fact, even the objective function can be changed!  He focused on the problem of non-negative matrix factorization (NMF), where the original objective function of quadratic loss minimization is hard. On the other hand,  under a so-called  separability assumption, the objective  can  be changed as <em>finding a simplex with non-negative vertices that contains the observations</em>, which can be solved efficiently. A similar philosophy holds for spectral methods, where the original objective function is abandoned, and instead spectral decompositions are employed to solve the learning task at hand. Sanjeev also made the excellent point that the assumptions needed for success are often something we can control as data collectors. For instance, separability holds for the NMF problem when more features are collected, e.g. for learning <a href="http://homepages.inf.ed.ac.uk/scohen/acl14pivot+supp.pdf">latent variable PCFGs via NMF techniques</a>.</p>
+
+<p>In a similar spirit,  <a href="http://cs.stanford.edu/people/chrismre/">Chris Re</a>  showed how we can strengthen the current theory to remove some of the pessimism behind the hardness of many problems that have good solutions  in practice. He described the notion of combinatorial width or fractional hypertree width, a notion from logic, that can provide a better analysis of Gibbs sampling and belief propagation.  <a href="http://theory.stanford.edu/~valiant/">Gregory Valiant</a> showed that by assuming more structure on the class of probability distributions we can do much better compared to the unstructured setting. This includes topic models, hidden Markov models, and word embeddings.</p>
+
+<h2 id="convex-envelopes-and-gaussian-smoothing">Convex envelopes and Gaussian smoothing</h2>
+
+<p><a href="http://people.csail.mit.edu/hmobahi/index2.html">Hossein Mobahi</a> talked about smoothing approaches for convexification. The <a href="http://www.tandfonline.com/doi/abs/10.1080/03605309908821476?journalCode=lpde20#.VnH1dEorK00">convex envelope</a> of a function  is  the convex function that provides the tightest lower bound. Any global minimizer of the original objective function is also a global minimizer of the convex envelope. While we are mostly familiar with the characterization of convex envelopes through duality (i.e. dual of the dual is the convex envelope), its characterization through partial differential equation (PDE) has been mostly unknown to the machine learning community. Hossein introduced the PDE form for convex envelope, and gave a nice interpretation in terms of carrying out diffusion along  non-convex regions of the objective function to obtain the convex envelope.  However, the convergence time for this PDE can be in general  exponential in the input dimension, and therefore is not tractable. Hossein showed that instead we can perform Gaussian smoothing efficiently for many functions such as polynomials. He gave a novel characterization of Gaussian smoothing as linearization of the convex envelope.  He proved it by analyzing the PDE of the convex envelope, and then showing that its linearization results in the <a href="http://people.csail.mit.edu/hmobahi/pubs/gaussian_convenv_2015.pdf">heat equation</a>, which corresponds to Gaussian smoothing. Hossein also provided bounds for the continuation method, where the extent of smoothing is progressively decreased, and related it to the complexity of the objective function. For more details, refer to his <a href="http://people.csail.mit.edu/hmobahi/pubs/aaai_2015.pdf">paper</a>.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>NP-hardness should not deter us from analyzing non-convex optimization in the context of machine learning. We should be creative in making new assumptions, we should try to change the problem structure and the objective function, collect relevant data to make the learning problem easier, and so on.</p>
+
+<p>As I conclude this blog post, I am reminded of my discussion with <a href="http://leon.bottou.org/">Leon Bottou</a>. He said that there are three levels of thinking, with increasingly more sophistication. At the first level, we merely aim to prove statements that are already formulated. Unfortunately, almost all formal education focuses on this type of skill. At the second level, we try to draw implications, given a fixed set of assumptions. On the other hand, at the third level, we need to simultaneously come up with reasonable assumptions as well as their implications, and this level requires the highest level of creativity. In the area of machine learning, there is tremendous opportunity for such creativity, and I am hoping that the workshop managed to foster more of it.</p>
+
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/01/25/non-convex-workshop/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=NIPS 2015 workshop on non-convex optimization&url=http://localhost:4000/2016/01/25/non-convex-workshop/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/01/25/non-convex-workshop/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/01/25/non-convex-workshop/&title=NIPS 2015 workshop on non-convex optimization" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/01/25/non-convex-workshop/&title=NIPS 2015 workshop on non-convex optimization" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/01/25/non-convex-workshop/&t=NIPS 2015 workshop on non-convex optimization" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/01/25/non-convex-workshop';
+    var disqus_title      = 'NIPS 2015 workshop on non-convex optimization';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

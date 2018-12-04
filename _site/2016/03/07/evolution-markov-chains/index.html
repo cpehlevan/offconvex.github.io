@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Evolution, Dynamical Systems and Markov Chains &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Introduce evolution and how dynamical systems and Markov chains come in">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/03/07/evolution-markov-chains/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Evolution, Dynamical Systems and Markov Chains">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/03/07/evolution-markov-chains/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Evolution, Dynamical Systems and Markov Chains</h1>
+  <div class="post-meta">
+  
+  Nisheeth Vishnoi &nbsp;&bull;&nbsp;
+  
+  
+  Mar 7, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    18 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>In this post we present a high level introduction to evolution and to how we can use mathematical tools such as dynamical systems and Markov chains to model it. 
+Questions about evolution then translate to questions about dynamical systems and Markov chains – some are easy to answer while others point to gaping holes in current techniques in algorithms and optimization. 
+In particular, in this post, we present a setting which captures the evolution of viruses and formulate the question <em>How quickly could evolution happen?</em> This question is not only relevant for the feasibility of drug-design strategies to counter viruses, it also leads to  non-trivial questions in computer science.</p>
+
+<h2 id="just-4-billion-years">Just 4 Billion Years…</h2>
+<p>Starting with the pioneering work of Darwin and Wallace, over the last two centuries there has been tremendous scientific and mathematical advances in our understanding of evolution and how it has shaped diverse and complex life – <em>in a matter of just four billion years</em>.
+However, unlike physics where the laws seem to be consistent across the universe, evolution is quite complex and its governing dynamics can depend on the  context – if we look closely enough, the evolution of life forms such as viruses is quite different from that of humans.
+Thus, the theory of evolution is not a succinct one, there is vagueness for those who seek mathematical clarity, and, for sure, you should not expect one post to explain all of its various aspects! 
+Instead, we will introduce the basic apparatus of evolution, focus on a concrete setting which has been used to model the evolution of viruses, and ask questions concerning the efficiency of such an evolution.</p>
+
+<h2 id="evolution-in-a-nutshell">Evolution in a Nutshell</h2>
+
+<p>Abstractly, we can view evolution as  nothing but a  mechanism (or a <em>meta-algorithm</em>), that takes a population (which is capable of <em>reproducing</em>) as an input and outputs the next generation. 
+At any given time, the population is composed of individuals of different <em>types</em>. As this is all happening in an environment in which resources are limited, who is <em>selected</em> to be a part of the next generation and who is not is determined by the <em>fitness</em> of a type in the environment.
+The reproduction could be <em>asexual</em> – a simple act of cloning,  or <em>sexual</em> – involving the combination of two (or more) individuals to produce offspring.
+Moreover, during reproduction there could be <em>mutations</em> that transform one type into another.
+Each of the reproduction, selection or mutation steps could be deterministic or stochastic making evolution either a deterministic or randomized function of the input population.</p>
+
+<p>The size of the population, the number of types, the fitness of each type in the environment, the probabilities of mutation and the starting state are the parameters of the model. 
+Typically, one fixes these parameters  and studies how the population evolves over time – whether it reaches a limiting or a steady state and, if so, how this limiting state varies with the parameters of the model and how  quickly the limiting state is reached.</p>
+
+<blockquote>
+  <p>After all, evolution without a notion of efficiency is an incomplete theory.</p>
+</blockquote>
+
+<p>An important and different take on this question is Leslie Valiant’s <a href="http://dl.acm.org/citation.cfm?id=1462156">work</a> on using computational learning theory to understand evolution quantitatively.
+Finally, as you might have guessed by now, in such generality, evolution encompasses processes which have a priori nothing to do with biology; indeed, evolutionary models have been used to understand many social, economical and cultural phenomena, as described in <a href="http://www.hup.harvard.edu/catalog.php?isbn=9780674023383">this</a> book by Nowak.</p>
+
+<p style="text-align:center;">
+<img src="/assets/evolution.jpg" alt="" />
+</p>
+
+<h2 id="populations-infinite--dynamical-system-finite--markov-chain">Populations: Infinite = Dynamical System, Finite = Markov Chain</h2>
+
+<p>Given an evolutionary model (which could include stochastic steps), as a first step to understand it we typically assume that the population is  <em>infinite</em> and hence all steps are effectively deterministic; we will see an example soon. 
+This allows the evolution of the fraction of each type in the population to be modeled as a deterministic <em>dynamical system</em> from a probability simplex (denoted by $\Delta_m$)  to itself; here $m$ is the number of types.
+However, real populations are  finite and often lend themselves to substantial stochastic effects such as random <a href="https://en.wikipedia.org/wiki/Genetic_drift">genetic drift</a>. In order to understand  their limiting behavior as a function of the population size, 
+ we can neither  assume that the population is infinite nor  ignore stochasticity in the steps in evolution. 
+ Hence, Markov chains are appealed to in order to study finite populations.
+To be concrete, we move on to describing a deterministic and stochastic model for  error-prone evolution of an asexual  population.</p>
+
+<h2 id="a-deterministic-infinite-population-model">A Deterministic, Infinite Population Model</h2>
+
+<p>Consider an infinite population composed of individuals each of who could be one of $m$ types. 
+An individual of type $i$ has a fitness which is specified by a
+positive integer $a_i,$ and we use a 
+$m \times m$ diagonal matrix $A$ whose $(i,i)$th entry is $a_i$ to capture it. 
+The
+reproduction is error-prone and this is captured by an $m\times m$
+stochastic matrix $Q$ whose $(i,j)$th entry captures the probability
+that the $j$th type will mutate to the $i$th type during
+reproduction. In the reproduction stage each type $i$  in the current population produces $a_i$ copies of itself. 
+During reproduction, mutations might occur and in our deterministic model, we assume that one unit  of $j$ gives rise to $Q_{i,j}$ fraction of population of $i.$ 
+Since the total mass could become more than one due to reproduction, in the <em>selection</em> stage we normalize the mass so that it is again of unit size.</p>
+
+<p>Thus, the fitness of a type influences its representation in the selected population.
+Mathematically, we can then track the fraction of each type at step $t$ of the evolution by a
+vector ${x}^{(t)}\in \Delta_m$ whose evolution is then governed by the dynamical system 
+$ {x}^{(t+1)} = \frac{QA {x}^{(t)}}{\Vert QA {x}^{(t)}\Vert_1}.$
+(This is one of the dynamical systems we considered in a previous <a href="http://www.offconvex.org/2015/12/21/dynamical-systems-1/">post</a>.) 
+Thus, the eventual fate of the evolutionary process is not a single type, rather  an <em>invariant distribution</em> over types. 
+We saw that when $QA&gt;0$,  there is a <em>unique</em> fixed point of this dynamical system; the largest right eigenvalue of $QA.$
+Thus, no matter where one starts, this dynamical system converges to this fixed point.
+Biologically, the  corresponding eigenvalue can be shown to be the <em>average fitness</em> of the population which is, in effect, what  is being maximized.</p>
+
+<p>How quickly? Well, elementary linear algebra tells us that the rate of convergence of this process is governed by the ratio of the second largest to the largest eigenvalue of $QA.$ 
+Finally, we note that the dynamical system corresponding to a sexually reproducing population is not hard to describe and has been studied <a href="http://www.pnas.org/content/111/29/10620.abstract">recently</a> from an optimization point of view.</p>
+
+<h2 id="a-stochastic-finite-population-model">A Stochastic, Finite Population Model</h2>
+
+<p>Consider now a stochastic, finite population version of the evolutionary dynamics described above. 
+Here, the population is again assumed to be asexual  but now it has a fixed finite size $N.$
+After normalization, the composition of the population is again captured by a  point in $\Delta_m$ say
+$ {X}^{(t)}$ at time $t.$ 
+How does one generate ${X^{(t+1)}}$
+in this model when the parameters are described by the matrices
+$Q$ and $A$ as in the infinite population setting?  In the reproduction stage, one first replaces an individual of type $i$ in
+the current population by $a_i$ individuals of type $i$: the total
+number of individuals of type $i$ in the intermediate population is
+therefore $a_iN {X_i}^{(t)}$. 
+In the mutation stage, 
+each individual in this intermediate population mutates independently and
+stochastically according to the matrix $Q.$ 
+Finally, in the selection stage, the
+population is culled back to size $N$ by sampling 
+$N$ individuals from this intermediate population.</p>
+
+<p>Each of these steps  is depicted in Figure 2. 
+Note that stochasticity necessarily means that, even if we initialize the system in the same way,  different runs of the chain could produce very different outcomes.
+The vector
+$X^{(t+1)}$ then is the normalized frequency vector of the
+resulting population. 
+The state space  of the Markov chain described above has size ${N+m-1}\choose{m-1}.$
+When $QA&gt;0,$ this Markov chain is <a href="https://en.wikipedia.org/wiki/Markov_chain#Ergodicity">ergodic</a>
+  and, hence, has a unique steady state. 
+However, unlike the deterministic case, this steady state is not apriori easy to compute.
+Certainly, it has no closed form expression except in the most trivial cases.
+How do we compute it?</p>
+
+<h2 id="the-mixing-time">The Mixing Time</h2>
+
+<p>The number of states grows roughly like $N^m$ (when $m$ is small compared to $N$) and,    even for a small 
+constant $m=40$ and a population of size $10,000$, the number of
+states is more than $2^{300}$ – more than the number of atoms in the universe!
+Thus, at best, we can hope to have an  algorithm that samples from close to the steady state.
+In fact, noting that each step of the Markov chain can be implemented efficiently, evolution already provides  an algorithm.
+Its efficiency, however, depends on the time it takes to reach close to steady state – its <a href="https://en.wikipedia.org/wiki/Markov_chain_mixing_time">mixing time</a>.
+However, in general, there is no way to proclaim that a Markov chain has reached close to its steady state other than <em>providing a bound (along with a proof) on the mixing time</em>. 
+Proving bounds on mixing times of Markov chains is an important area in computer science which interfaces with a variety of other disciplines such as statistics, statistical physics and machine learning; see <a href="https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo">here</a>.
+In evolution, however, the mixing time is important beyond computing statistics of samples from the steady state: it  tells us how quickly a steady state could be reached. 
+This has biological significance as we will momentarily see in applications of this model to viral evolution.</p>
+
+<h2 id="viral-evolution-and-drug-design-the-importance-of-mixing-time">Viral Evolution and Drug Design: The importance of mixing time</h2>
+<p>The Markov chain described above 
+has recently found use in modeling RNA viral populations which reproduce asexually and that show strong stochastic behavior (e.g., HIV-1, see <a href="http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002684">here</a>), which in turn has guided drug and
+vaccine design strategies.</p>
+
+<blockquote>
+  <p>For example,  the effective population size of HIV-1 in an infected individual is <a href="http://www.sciencedirect.com/science/article/pii/S0966842X06002332">approximately</a> $10^3-10^6$  not big enough for us to use infinite population models.</p>
+</blockquote>
+
+<p>Let us see, again at a high-level, how.
+RNA viruses, due to their primitive copying mechanisms,   often undergo mutations during reproduction.
+Mutations introduce genetic variation and the population at any time is composed of different types – some of them being highly effective (in capturing the host cell) and some not so much.
+A typical situation to keep in mind is when the number of effective types is a relatively small fraction of $m.$ 
+For the sake of simplicity, let us assume that we are in the setting where each strain mutates to another type with probability $\tau$ during reproduction and remains itself with probability $1-\tau (m-1).$ 
+Thus, as $\tau$ goes from $0$ to $1/m,$ intuitively, in the steady state, the composition of the viral population goes from being concentrated on the effective types to uniformly distributed over all types. 
+The population as a whole is effective if most of its mass in the steady state is concentrated around the effective types and we can declare it dead if it is the latter.</p>
+
+<blockquote>
+  <p><a href="https://en.wikipedia.org/wiki/Manfred_Eigen">Eigen</a>,
+ in a pioneering work, observed that in fact there is a critical mutation rate called the <a href="https://en.wikipedia.org/wiki/Error_threshold_(evolution)">error threshold</a>
+  around which there is a <em>phase transition</em> – i.e.,  the virus population changes suddenly from being highly effective to dead.</p>
+</blockquote>
+
+<p>(This observation was proven formally <a href="http://theory.epfl.ch/vishnoi/Publications_files/VError.pdf">here</a>).
+This suggests a strategy to counter viruses: drive their mutation rate past their error threshold!
+Intriguingly, this strategy is already employed by the body which can produce antibodies that increase the mutation rate. 
+Artificially, this effect can also be accomplished by mutagenic drugs such as ribavirin, see <a href="http://www.pnas.org/content/98/12/6895">here</a> and <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0015135">here</a>
+In this setting,  knowing the error threshold with high precision is critical: inducing the body with excess mutagenic drugs could have undesired ramifications that lead to complications such as  cancer, whereas increasing the rate while keeping it below the threshold can increase the fitness of the virus by allowing it to adapt more effectively, making it more lethal. 
+Computing the error threshold requires the knowledge of the steady state and, thus, is one place where a bound on the mixing time is required.
+Further, when modeling the effect of a mutagenic
+drug, the convergence rate determines the minimum required duration of treatment.</p>
+
+<blockquote>
+  <p>If the virus population does not reach its steady state in the lifetime of the infected patient, then what good is that?</p>
+</blockquote>
+
+<h2 id="to-conclude">To Conclude…</h2>
+<p>We hope that through this example we have convinced you that efficiency is an important consideration in evolution. 
+Specifically, in the setting we presented, the knowledge of the mixing time of evolutionary Markov chains is a crucial question. 
+Despite its importance,  there has been a lack of rigorous mixing time bounds for the full range of parameters, even in the simplest of evolutionary models considered here. 
+Prior work has  either ignored mutation, assumed that the model is <em>neutral</em> (i.e., types have the same fitness), 
+  or moved to the diffusion limit which requires both mutation and selection pressure to be weak. 
+These bounds apply in some special subcases of evolution and we would like to know  mixing time bounds that work for all parameters.
+In a sequence of results available <a href="http://arxiv.org/abs/1203.1287">here</a>, <a href="http://dl.acm.org/citation.cfm?id=2722129.2722234">here</a> and <a href="http://epubs.siam.org/doi/10.1137/1.9781611974331.ch36">here</a>,
+ we have shown that a wide class of evolutionary Markov chains (which includes the one described in this post) can mix quickly for all parameter settings as long as the population is large enough! 
+Further, trying to analyze them  has led to <em>new techniques to analyze mixing time of Markov chains and stochastic processes which might be important beyond evolution</em>. 
+We will explain some of these techniques in a subsequent post and continue our discussion, more generally, on evolution viewed from the lens of efficiency.</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/03/07/evolution-markov-chains/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Evolution, Dynamical Systems and Markov Chains&url=http://localhost:4000/2016/03/07/evolution-markov-chains/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/03/07/evolution-markov-chains/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/03/07/evolution-markov-chains/&title=Evolution, Dynamical Systems and Markov Chains" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/03/07/evolution-markov-chains/&title=Evolution, Dynamical Systems and Markov Chains" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/03/07/evolution-markov-chains/&t=Evolution, Dynamical Systems and Markov Chains" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/03/07/evolution-markov-chains';
+    var disqus_title      = 'Evolution, Dynamical Systems and Markov Chains';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

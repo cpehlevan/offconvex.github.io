@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="We show how Markov chains can be understood in terms of their expected motion in the context of evolution. We also connect evolutionary Markov chains to stochastic gradient descent.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Markov Chains Through the Lens of Dynamical Systems&amp;#58; The Case of Evolution">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution</h1>
+  <div class="post-meta">
+  
+  Nisheeth Vishnoi &nbsp;&bull;&nbsp;
+  
+  
+  Apr 4, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    20 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>In this post, we will see the main technical ideas in the analysis of the mixing time of evolutionary Markov chains introduced in a previous <a href="http://www.offconvex.org/2016/03/07/evolution-markov-chains/">post</a>.
+We start by introducing the notion of the <em>expected motion</em> of a stochastic process or a Markov chain.
+In the case of a finite population evolutionary Markov chain, the expected motion turns out to be a dynamical system which corresponds to the infinite population evolutionary dynamics with the same parameters.
+Surprisingly, we show that the limit sets of this dynamical system govern the mixing time of the Markov chain.
+In particular, if the underlying dynamical system has a unique stable fixed point (as in asexual evolution), then the mixing is fast and in the case of multiple stable fixed points (as in sexual evolution), the mixing is slow.
+Our viewpoint connects evolutionary Markov chains, <em>nature’s algorithms</em>, with stochastic descent methods, popular in machine learning and optimization, and the readers interested in the latter might benefit from our techniques.</p>
+
+<h2 id="a-quick-recap">A Quick Recap</h2>
+
+<p>Let us recall the parameters of the finite population evolutionary Markov chain (denoted by $\mathcal{M}$) we saw last time. 
+At any time step, the state of the Markov chain consists of a population of size $N$ where each individual could be one of $m$ types. 
+The  mutation and the fitness matrices are denoted by $Q$ and $A$ respectively.
+$X^{(t)}$ captures, after normalization by $N,$ the composition of the population is at time $t$. 
+Thus,  $X^{(t)}$ is a point in the $m$-dimensional probability simplex $\Delta_m$.
+Since we assumed that $QA&gt;0$, the Markov chain has a stationary distribution $\pi$ over its state space, denoted by $\Omega \subseteq \Delta_m$; the state space has cardinality roughly $N^m$.
+Thus, $X^{(t)}$ evolves in $\Delta_m$ and, with time, its distribution converges to $\pi$. 
+Our goal is to bound the time it takes for this distribution to stabilize, i.e., bound the mixing time of $\mathcal{M}$.</p>
+
+<h2 id="the-expected-motion">The Expected Motion</h2>
+
+<p>As a first step towards understanding the mixing time, let us compute the expectation of $X^{(t+1)}$ for a given $X^{(t)}$. 
+This function tells us where we expect to be after one time step given the current state; in <a href="http://theory.epfl.ch/vishnoi/Publications_files/PV16.pdf">this</a> paper we refer to this as the  <em>expected motion</em> of this Markov chain (and define it formally for all Markov chains towards the end of this post).
+An easy calculation shows that, for $\mathcal{M}$,</p>
+
+<script type="math/tex; mode=display">\mathbb{E} \left[  X^{(t+1)} \; \vert \; X^{(t)} \right] = \frac{QA X^{(t)}}{\|QAX^{(t)}\|_1}=: f(X^{(t)}).</script>
+
+<p>This $f$ is the same function that was introduced in the previous post for the <em>infinite</em> population evolutionary dynamics with the same parameters!
+Thus, in each time step, the expected motion of the Markov chain is governed by $f$. 
+Surprisingly, something  stronger is true: we can prove (see Section 3.2 <a href="http://theory.epfl.ch/vishnoi/Publications_files/PSVSODA16.pdf">here</a>) that, given some $X^{(t)},$ the point  $X^{(t+1)}$ can be equivalently obtained by taking $N$ i.i.d. samples from $f(X^{(t)})$. 
+In words,</p>
+
+<script type="math/tex; mode=display">f \; \; \mbox{guides} \; \;  \mathcal{M}.</script>
+
+<blockquote>
+  <p>In fact, a moment’s thought tells us that this phenomenon transcends any specific model of evolution. 
+We can fix <strong>any</strong> dynamical system $g$ over the simplex and define a Markov chain guided by it as follows: If $X^{(t)}$ is the population vector at time $t$, then define $X^{(t+1)}$ as the population vector obtained by taking $N$ i.i.d. (or even correlated) copies from $g(X^{(t)})$. By design, $g$ is the expected motion of this Markov chain.</p>
+</blockquote>
+
+<h2 id="evolution-on-finite-populations--noisy-evolution-on-infinite-populations">Evolution on Finite Populations = Noisy Evolution on Infinite Populations</h2>
+
+<p>The above observation allows us to view our evolutionary Markov chain as a noisy version of the deterministic, infinite population evolution. 
+A bit more formally, there are implicitly defined random variables $\zeta_{s}^{(t+1)}$ for $1 \leq s \leq N$ and all $t$,   such that</p>
+
+<script type="math/tex; mode=display">X^{(t+1)} = f(X^{(t)}) + \frac{1}{N} \sum_{s=1}^N \zeta_s^{(t+1)}.</script>
+
+<p>Here, $\zeta_s^{(t+1)}$ for $1\leq s \leq N$ is a  random vector  that corresponds to the  <em>error</em> or <em>noise</em> of  sample $s$ at the $t$-th time step.
+Formally, because $f$ is the expected motion of the Markov chain, 
+ each $\zeta_s^{(t+1)}$ has expectation $0$ conditioned on $X^{(t)}$. 
+ Further, the fact that $f$ guides $\mathcal{M}$  implies that for each $t$, when conditioned on $X^{(t)}$, the vectors $\zeta_{s}^{(t+1)}$  are i.i.d. for $1 \leq s \leq N$. 
+Without conditioning, we cannot say much about  the $\zeta_{s}^{(t)}$s.
+However, since we know that the state space of $\mathcal{M}$ lies in the simplex, we can deduce that $\Vert\zeta_s^{(t)}\Vert \leq 2$. 
+The facts that the expectation of the $\zeta_s^{(t)}$s are zero, they are independent and bounded imply that the variance of each coordinate of $\frac{1}{N} \sum_{s=1}^N \zeta_s^{(t+1)}$ 
+  (again conditioned on the past) is roughly $1/N$.</p>
+
+<h2 id="connections-to-stochastic-gradient-descent">Connections to Stochastic Gradient Descent</h2>
+
+<p>Now we draw an analogy of the evolutionary Markov chain to an old idea in optimization, stochastic gradient descent or <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">SGD</a>.
+However, we will see crucial differences that require the development of new tools.
+Recall that in the SGD setting, one is given a function $F$ and the goal is to find a local minimum of $F.$
+The gradient descent method moves from the current point $x^{(t)}$ to a new point $x^{(t+1)}=x^{(t)} - \eta \nabla F(x^{(t)})$ for some rate $\eta$ (which could depend on time $t$).<br />
+Since the gradient may not be easy to compute,  SGD substitutes the gradient at the current point by an unbiased estimator  of the gradient. 
+Thus, the point at time $t$  becomes a random variable $X^{(t)}$. Since the estimate is unbiased, we may write it as</p>
+
+<script type="math/tex; mode=display">\nabla F(X^{(t)}) - \zeta^{(t+1)},</script>
+
+<p>where  the expectation of $\zeta^{(t+1)}$ conditioned on $X^{(t)}$ is zero.
+Thus, we can write one step of SGD as</p>
+
+<script type="math/tex; mode=display">X^{(t+1)} = \left( X^{(t)} -\eta \nabla F(X^{(t)}) \right) +\eta \cdot  \zeta^{(t+1)}.</script>
+
+<p>Comparing it to our evolutionary Markov chain, it can be shown that $f(x)=\frac{QA x}{\Vert QA x\Vert_1}$ is a gradient system (i.e., $f=\nabla G$ for some function $G$) and we  may think of the corresponding $\mathcal M$ as SGD with  step-size $\eta=1/N$.</p>
+
+<p>There is a vast literature understanding when SGD converges to the global optimum (for convex $F$) or a local optima (for <em>reasonable</em> non-convex $F$). 
+Why can’t we use techniques developed for SGD  to analyze our evolutionary Markov chain? 
+ To start with, when the step size does not go to zero with time,  $X^{(t)}$ wanders around its domain $\Omega$ and will not converge to a point.
+In the case when the step size is fixed, typically, the time <a href="http://arxiv.org/pdf/1306.2119.pdf">average</a> of $X^{(t)}$ is used in a hope that it will converge to a local minima of the function.
+The Ergodic Theorem of Markov chains tells us that the time average will  converge to the expectation of a sample drawn from $\pi$, the steady state distribution.
+This quantity is the same as the zero of $\nabla F$ <em>only when it is a linear function</em> (equivalently $F$ is quadratic); <em>certainly not the case in  our setting</em>.
+Further, the rate of convergence to this expectation is governed by the mixing time of the Markov chain.
+Thus, there is no getting around proving a bound on the mixing time. 
+Moreover, for biological applications (as described in our previous post),  we need to know more than the expectation: we need to obtain samples from the steady state distribution $\pi$. 
+Finally, in several other evolutionary Markov chains of interest, the guiding dynamical system is <em>not a gradient system</em>. 
+Hence, the desired results in the setting of evolution seem  beyond the reach of current techniques.</p>
+
+<blockquote>
+  <p>The reason for taking this detour and making the connection to SGD is not only to show that completely different sounding problems and areas might be related, but also that the techniques we develop in analyzing evolutionary Markov chains find use in understanding SGD beyond the quadratic case.</p>
+</blockquote>
+
+<h2 id="the-landscape-of-the-expected-motion-governs-the-mixing-time">The Landscape of the Expected Motion Governs the Mixing Time</h2>
+
+<p>Now we delve into our results and proof ideas. 
+We derive all of the information we need to bound the mixing time of $\mathcal M$ from the the limit sets of $f$ which guides it. Roughly, we show that when the limit set of  $f$ consists of a unique stable fixed point (which is akin to convexity) as in asexual evolution, then the mixing is fast and in the case of multiple stable fixed points (which is akin to non-convexity) as in sexual evolution, the mixing is slow.</p>
+
+<p>We saw in our first  <a href="http://www.offconvex.org/2015/12/21/dynamical-systems-1/">post</a> that the dynamical system $f(x)=\frac{QAx}{\Vert QAx\Vert_1}$ corresponding to the case of asexual evolution has exactly one fixed point in the simplex, say $ x^\star$, when $QA$ is positive. 
+In fact,  $x^\star$ is stable  and, no matter where we initiate the dynamical system, it ends up close to $x^\star$ in a small number of iterations (which does not depend on $N$).</p>
+
+<p>Back to mixing time: a generic technique to bound the mixing time of a Markov chain employs a <em>coupling</em> of two copies of the chain $X^{(t)}$ and $Y^{(t)}$.</p>
+
+<blockquote>
+  <p>A coupling of a Markov chain $\mathcal M$ is a function which takes as input $X^{(t)}$ and $Y^{(t)}$ and outputs $X^{(t+1)}$ and $Y^{(t+1)}$ such that each of  $X^{(t+1)}$ and $Y^{(t+1)}$, when considered on their own, is a correct instantiation of one step of $\mathcal M$ from the states $X^{(t)}$ and $Y^{(t)}$ respectively. However, $X^{(t+1)}$ and $Y^{(t+1)}$ are allowed to  be arbitrarily correlated.</p>
+</blockquote>
+
+<p>For example, we could couple $X^{(t)}$ and $Y^{(t)}$ such that if $X^{(t)} = Y^{(t)}$ then $X^{(t+1)}=Y^{(t+1)}$. More generally, we can consider the <em>distance</em> between $X^{(t)}$ and $Y^{(t)}$, and consider a coupling that contracts the distance between them. If this distance is contractive by, say, a factor of $\rho&lt;1$ at every time step, then the number of iterations required to reduce distance  below $1/N$ is about $\log_{1/\rho} N$; this roughly  upper bounds the mixing time.</p>
+
+<p style="text-align:center;">
+<img src="/assets/coupling.jpg" alt="" />
+</p>
+
+<p>The key observation that connects the dynamical system $f$ and our Markov chain is that using the function $f$ we can construct a coupling $\mathcal{C}$ such that for all $x$,$y \in \Omega$,</p>
+
+<script type="math/tex; mode=display">\mathbb{E}_{\mathcal{C}}\left[\|{X}^{(t+1)}-{Y}^{(t+1)}\|_1 \; | \; {X}^{(t)}=x, {Y}^{(t)}=y \right]=\|f(x)-f(y)\|_1.</script>
+
+<p>Thus, if $ \Vert f(x)-f(y)\Vert_1 &lt; \rho \cdot \Vert x-y\Vert_1 &lt;1$ for some $\rho&lt;1$ and <em>all</em> $x,y \in \Omega$, we would be done. 
+The bad news is that we can show that there are $x,y$ for which $\Vert f(x)-f(y)\Vert_1 &gt; \Vert x-y \Vert_1$ implying that there is no contractive coupling for all $x$ and $y.$</p>
+
+<blockquote>
+  <p>What about when $x$ and $y$ are close to $x^\star$?</p>
+</blockquote>
+
+<p>In this case, by a first order Taylor approximation of the dynamical system $f$, we can bound the contraction $(\rho)$ by  the $1 \rightarrow 1$ norm of the <a href="https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant">Jacobian</a> of $f$ at $x^\star$. 
+However, this quantity is less than one <a href="http://dl.acm.org/citation.cfm?id=2722129.2722234">only</a> when $m=2$, see <a href="http://dl.acm.org/citation.cfm?id=2722129.2722234">here</a>.
+For larger $m$, we have to go back to  our intuition from dynamical systems and, using the fact that  all trajectories of $f$ converge to $x^\star$,  argue that the appropriate norm of the Jacobian of $f^k$ (i.e., $f$ applied $k$ times) is contractive.
+While there are a few technical challenges, we can use $f^k$ to construct a contractive coupling. We then use concentration to handle the case  when $x$,$y$ are not close to $x^\star$,
+see <a href="http://theory.epfl.ch/vishnoi/Publications_files/PSVSODA16.pdf">here</a> for the details.
+As a consequence, we obtain a mixing time of $O(\log N)$ (suppressing other parameters). 
+Thus,  in the world of asexual evolution the steady state can be reached quickly!</p>
+
+<h2 id="markov-chains-guided-by-dynamical-systems---beyond-uniqueness">Markov Chains Guided by Dynamical Systems - Beyond Uniqueness</h2>
+
+<p>Interestingly, this proof does not use any  property of $f$ other than that it has a unique  fixed point which is stable. 
+However, in many cases, such as sexual evolution (see <a href="http://theory.epfl.ch/vishnoi/Publications_files/PV16.pdf">here</a> for the model of sexual evolution or an equivalent model for how <em>children acquire grammar</em>, see <a href="http://science.sciencemag.org/content/291/5501/114">here</a>) and <a href="http://www.sciencedirect.com/science/article/pii/S0022519303931997">here</a>, the expected motion has multiple fixed points - some stable and some unstable. 
+Such a dynamical system is inherently non-convex - trajectories starting at different points  could converge to different points. 
+Further, the presence of unstable fixed points can slow down trajectories and, hence, the mixing time.
+In <a href="http://theory.epfl.ch/vishnoi/Publications_files/PV16.pdf">this</a> paper, we give a comprehensive treatment about how the landscape of the limit sets determines the mixing time of evolutionary Markov chains.
+In a nutshell, while the presence of unstable fixed points does not seem to affect the mixing time, the presence of two stable fixed points results in the mixing time being $\exp(N)$!</p>
+
+<blockquote>
+  <p>This result allows us to prove a phase transition in the mixing time for an evolutionary Markov chain with sex where, changing the mutation  parameter  changes the geometry of the limit sets of the expected motion from multiple stable fixed points to unique stable fixed point.</p>
+</blockquote>
+
+<h2 id="evolution-on-structured-populations">Evolution on Structured Populations?</h2>
+<p>A  challenging problem left open by our work  is to try to estimate the mixing time of evolutionary dynamics on <em>structured</em> populations which arise in ecology.
+Roughly, this setting extends  the evolutionary models discussed thus far by introducing an
+additional input parameter, a graph on $N$ vertices.</p>
+
+<blockquote>
+  <p>The graph
+provides structure to the population by locating each individual at a
+vertex, and, at time $t+1$, a vertex determines its type by sampling with replacement from among its neighbors in the graph at time $t$; see <a href="http://www.nature.com/nature/journal/v433/n7023/full/nature03204.html">this</a> paper for more details.</p>
+</blockquote>
+
+<p>The model we discussed so far can be seen as a special case when the underlying graph is the complete graph on $N$ vertices. 
+ The difficulty is two fold: now it is no longer sufficient to keep track of the number of each type and also the variance of the noise is no longer $1/N$ - it could be large if a vertex has small degree.</p>
+
+<h2 id="the-expected-motion-revisited">The Expected Motion Revisited</h2>
+
+<p>Now we formally define the expected motion of any Markov chain  with respect to a function $\phi$   from its state space $\Omega$ to  $\mathbb{R}^n$.
+If $X^{(t)}=x$ is the state of the Markov chain at time $t$ and $X^{(t+1)}$ its state at time $t+1,$ then the  expected motion of $\phi$  for the chain at $x$ is</p>
+
+<script type="math/tex; mode=display">\mathbb{E}\left[\phi(X^{(t+1)}) \;| \;X^{(t)} =x \right]</script>
+
+<p>where the expectation is taken over one step of the chain.
+Often, and in the application we presented in this post, the state space $\Omega$ already has a geometric structure and is  a subset of $\mathbb{R}^n$. 
+In this case, there is a canonical expected motion which corresponds to  $\phi$ being just the identity map.</p>
+
+<blockquote>
+  <p>What can the expected motion of a Markov chain tell us about the Markov chain itself?</p>
+</blockquote>
+
+<p>Of course, without imposing additional structure on the Markov chain or $\phi$, the answer is unlikely to be very interesting. However, the results in this post suggest that thinking of a Markov chain in this way can be quite useful.</p>
+
+<h2 id="to-conclude-">To Conclude …</h2>
+<p>In this post, hopefully, you got a flavor of how techniques from dynamical systems can be used to derive interesting properties of Markov chains and stochastic processes. 
+We also saw that nature’s methods, in the context of evolution, seem quite close to the methods of choice of humans - <em>is this a coincidence</em>?
+In a future post, we will show another <a href="http://arxiv.org/abs/1601.02712">example</a> of this phenomena - the famous iteratively reweighted least squares (IRLS) in sparse recovery turns out to be identical to the dynamics of an organism found in nature - the slime mold.</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution&url=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/&title=Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/&title=Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/04/04/markov-chains-dynamical-systems/&t=Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/04/04/markov-chains-dynamical-systems';
+    var disqus_title      = 'Markov Chains Through the Lens of Dynamical Systems&#58; The Case of Evolution';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

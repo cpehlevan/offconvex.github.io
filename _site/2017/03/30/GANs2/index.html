@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Generalization and Equilibrium in Generative Adversarial Networks (GANs) &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2017/03/30/GANs2/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Generalization and Equilibrium in Generative Adversarial Networks (GANs)">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2017/03/30/GANs2/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Generalization and Equilibrium in Generative Adversarial Networks (GANs)</h1>
+  <div class="post-meta">
+  
+  Sanjeev Arora &nbsp;&bull;&nbsp;
+  
+  
+  Mar 30, 2017 &nbsp;&bull;&nbsp;
+  
+  
+  
+    16 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>The <a href="http://www.offconvex.org/2017/03/15/GANs/">previous post</a> described Generative Adversarial Networks (GANs), a technique for training generative models for image distributions (and other complicated distributions) via a 2-party game between a generator deep net and a discriminator deep net.  This post describes <a href="https://arxiv.org/abs/1703.00573">my new paper</a> with Rong Ge, Yingyu Liang, Tengyu Ma, and Yi Zhang. We address some fundamental issues about generalization in GANs that have been debated since the beginning; e.g., what is the sense in which the learnt distribution close to the target distribution, and also what kind of equilibrium exists between generator and discriminator.</p>
+
+<p>The usual analysis of GANs,  sketched in the previous post,  assumes “sufficiently large number of samples and sufficiently large discriminator nets” to conclude that at the end of training the learnt distribution should be close to the target distribution. Our new analysis, which accounts for the finite capacity of the discriminator net, calls this into question.</p>
+
+<p>Readers looking for new implementation ideas can skip ahead to the section below on our  <em>Mix + GAN</em> protocol. It takes other GANs codes as black box and (by adding extra capacity and corresponding training time) often improves the learnt distribution in qualitative and quantitative measures. Our  testing suggests that it works well out of the box.</p>
+
+<p><strong>Notation</strong> Assume images are represented as vectors in $\Re^d$. Typically $d$ would be  $1000$ or much higher. The <em>capacity</em> of the discriminator, namely, the number of trainable parameters, is denoted $n$. The distribution on all real-life images is denoted $P_{real}$. We assume that the number of distinct images in 
+$P_{real}$ —regardless of how one defines “distinct”—is enormous compared to all these parameters.</p>
+
+<p>Recall that the discriminator $D$ is trained to distinguish between samples from $P_{real}$ and samples from the generator’s distribution
+$P_{synth}$. This can be formalized using different measures (leading to different GANs objectives) and for simplicity our exposition here uses the <em>distinguishing probability</em> which is used in <a href="https://arxiv.org/abs/1701.07875">Wasserstein GAN</a> objective:</p>
+
+<script type="math/tex; mode=display">|~E_{x \in P_{real}}[D(x)] - E_{x \in P_{synth}}[D(x)]|\qquad (1).</script>
+
+<p>(Readers with a background in theoretical CS and cryptography will be reminded of similar definitions in theory of pseudorandom generators.)</p>
+
+<h2 id="finite-discriminators-have-limited-power">Finite Discriminators have limited power</h2>
+
+<p>The following simple fact shows why ignoring the discriminator’s capacity constraint can lead to grossly incorrect intuition. 
+(The constant $C$ is fairly small and explained in the paper.)</p>
+
+<blockquote>
+  <p><strong>Theorem 1</strong>  Suppose the discriminator has capacity  $n$.  Then expression (1) is less than $\epsilon$ when  $P_{synth}$ is the following:  uniform distribution on a random sample of $C n/\epsilon^2 \log n$ images from $P_{real}$.</p>
+</blockquote>
+
+<p>Note that this theorem is not a formalization of the usual failure mode discussed in GANs literature, whereby the generator simply memorizes the training images.  The theorem still applies if we allow the discriminator to use a large set of held out images from $P_{real}$, which are completely different than images in $P_{synth}$. Or, if the training set of images is much larger than  $C n/\epsilon^2 \log n$  images. Furthermore, common measures of diversity/novelty used in research papers (e.g., pick a random image from $P_{synth}$ and check the “distance” to the nearest neighbor among the training set) are not guaranteed to get around the problem raised by Theorem 1.</p>
+
+<p>Since $Cn/\epsilon^2\log n$ is rather small, this theorem says that a finite-capacity discriminator is unable to even enforce that $P_{synth}$ has  large <em>diversity</em>, let alone enforce that $P_{synth}\approx P_{real}$.   The theorem does not imply that existing GANs do not <em>in practice</em> generate diverse distributions; merely that the current analyses gives no reason to believe that they do so.</p>
+
+<p>The proof of the Theorem is a standard sampling argument from learning theory: take an $\epsilon$-net in the continuum of all deep nets of capacity $n$ and a fixed architecture, and do a union bound. Please see the paper for details. (Aside: the “$\epsilon^2$” term in Theorem 1 arises from this argument, and is ubiquitous in ML theory.)</p>
+
+<p>Motivated by this theorem, we argue in the paper  that the correct way to think about generalization for GANs is not the usual distance functions between distributions such as Jensen-Shannon or Wasserstein, but a new distance we define called <em>Neural net distance</em>. The neural net distance measures the ability of finite-capacity deep nets to distinguish the distributions. It can be small even when the other distances are large (as illustrated in the above theorem).</p>
+
+<h3 id="corollary-larger-training-sets-have-limited-utility">Corollary: Larger training sets have limited utility</h3>
+
+<p>In fact theorem 1 has the following rephrasing. Suppose we have a very large training set of images. If the discriminator has capacity $n$, then it suffices to take a subsample of size $C n/\epsilon^2 \log n$  from this training set, and we are guaranteed that GANs training using this subsample is capable of achieving a training objective that is within $\epsilon$ of the best achieved with the full training set. ( Any more samples can only improve the training objective by at most $\epsilon$. )</p>
+
+<h2 id="existence-of-equilibrium">Existence of Equilibrium</h2>
+
+<p>Let’s recall the objective used in GAN   (for simplicity, we again stick with the  Wasserstein GAN):</p>
+
+<p><script type="math/tex">\min_{G} \max_{D}~~E_{x\sim P_{real}}[D(x)] - E_{h}[D(G(h))] \qquad (1)</script>
+where $G$ is the generator net, and $P_{synth}$ is the distribution of $G(h)$ where $h$ is a random seed. Researchers have noted that this is implicitly a $2$-person game and it may not have an equilibrium; e.g., see the discussion around Figure 22 in <a href="https://arxiv.org/pdf/1701.00160.pdf">Goodfellow’s survey</a>. An <em>equilibrium</em> corresponds to a $G$ and a $D$ such that the pair are still a solution if we switch the order of min and max in (1). (That is, $G$ doesn’t have incentive to switch in response to $D$, and vice versa.) Lack of equilibrium may be a cause of oscillatory behavior observed in training.</p>
+
+<p>But ideally we wish to show something stronger than mere <em>existence</em> of equilibrium: we wish to exhibit an equilibrium where the generator <em>wins</em>, with the objective above at zero or close to zero (in other words, discriminator is unable to distinguish between the two distributions).</p>
+
+<p>We will prove existence of an $\epsilon$-<em>approximate equilibrium</em>, whereby switching the order of $G, D$ affects the expression by at most $\epsilon$. (That is, $G$ has only limited incentive to switch in respnse to $D$ and vice versa.) Naively one would imagine that proving such a result involves some insight into the distribution $P_{real}$ but surprisingly none is needed.</p>
+
+<blockquote>
+  <p><strong>Theorem 2</strong> If a generator net of capacity $T$ is able to generate a Gaussian distribution in $\Re^d$, then there exists an $\epsilon$-approximate equilibrium in the game where the generator has capacity $O(n T\log n/\epsilon^2 )$.</p>
+</blockquote>
+
+<p><em>Proof sketch:</em> A classical result in nonparametric statistics states that $P_{real}$ can be well-approximated by an <em>infinite</em> mixture of standard Gaussians. Now take a sample of size $O(n\log n/\epsilon^2)$ from this infinite mixture, and let $G$ be a uniform mixture on this finite sample of Gaussians. By an argument similar to Theorem 1, the distribution output by $G$ will be indistinguishable from $P_{real}$ by every deep net of capacity $n$. Finally, fold in this mixture of $O(n\log n/\epsilon^2)$ Gaussians into a single generator by using a small “selector” circuit that selects between these with the correct probability.</p>
+
+<p>This theorem only shows <em>existence</em> of a particular  equilibrium. What a GAN may actually find in practice using backpropagation is not addressed.</p>
+
+<p>Finally, if we are interested in objectives other than Wasserstein GAN, then a similar proof can show the existence of an
+$\epsilon$-approximate <em>mixed</em> equilibrium, namely, where the discriminator and generator are themselves  small mixtures of 
+deep nets.</p>
+
+<p><em>Aside:</em> The sampling idea in this proof goes back to  <a href="http://dl.acm.org/citation.cfm?id=195447">Lipton and Young 1994</a>.
+Similar ideas have also appeared in study of pseudorandomness (see <a href="http://ieeexplore.ieee.org/document/5231258/citations">Trevisan et al 2009</a>) and model criticism (see <a href="http://www.jmlr.org/papers/volume13/gretton12a/gretton12a.pdf">Gretton et al 2012</a>.)</p>
+
+<h2 id="mix--gan-protocol">MIX + GAN protocol</h2>
+
+<p>Our theory  shows that using a mixture of (not too many) generators and discriminators guarantees existence of approximate equilibrium. This suggests that GANs training may be better and more stable we replace the simple generator and discriminator with mixtures of generators.</p>
+
+<p>Of course, it is impractical to use very large mixtures, so we propose  <strong>MIX + GAN</strong>: use a mixture of $k$ components, where $k$ is as large as allowed by size of GPU memory. Namely, train a mixture of $k$ generators ${G_{u_i}, i\in [k]}$ and $k$ discriminators ${D_{v_i}, i\in [k]}$). All components of the mixture share the same network architecture but have their own trainable parameters.  Maintaining a mixture means of course maintaining a  weight $w_{u_i}$ for the generator $G_{u_i}$ which corresponds to the probability of selecting the output of $G_{u_i}$. These weights are also updated via backpropagation.  This heuristic can be combined with existing
+methods like DC-GAN, W-GAN etc., giving us new training methods MIX + DC-GAN, MIX + W-GAN etc.</p>
+
+<p>Some other experimental details: store the mixture probabilities using logarithm and use <a href="https://users.soe.ucsc.edu/~manfred/pubs/J36.pdf">exponentiated gradient</a> to update. Use an entropy regularizer to prevent collapse of the mixture to single component. All of these are theoretically justified if $k$ were very large, and are only heuristic when $k$ is as small as $5$.</p>
+
+<p>We show that MIX+GAN can improve performance qualitatively (i.e., the images look better) and also quantitatively using popular measures such as Inception score.</p>
+
+<div style="text-align:center;">
+<img style="width:375px;" src="http://www.cs.princeton.edu/~arora/img/celeA_dcgan.png" /> $\quad$ <img style="width:375px;" src="http://www.cs.princeton.edu/~arora/img/celeA_mixgan.png" />
+</div>
+
+<p>Note that using a mixture increases the capacity of the model by a factor $k$, so it may not be entirely fair to compare the performance of MIX + X with X. On the other hand, in general it is not easy to get substantial performance benefit from increasing deep net capacity (in fact obvious ways of adding capacity that we tried actually reduced performance)   whereas here the benefit happens out of the box.</p>
+
+<p>Note that a mixture of generators or discriminators has been used in several recent works (cited in our paper), but we are not aware of any attempts to use a trainable mixture as above.</p>
+
+<h2 id="take-away-lessons">Take-Away Lessons</h2>
+
+<p>Complete understanding of GANs is challenging since we cannot even fully analyse simple backpropagation, let alone backpropagation combined with  game-theoretic complications.</p>
+
+<p>We therefore set aside issues of algorithmic convergence and focused on generalization and equilibrium, which focus on the maximum value of the objective. Our analysis suggests the following:</p>
+
+<p>(a) Current GANs training uses a finite capacity deep net to distinguish between synthetic and real distributions. This training criterion by itself seems insufficient to ensure even good <em>diversity</em> in the synthetic distribution, let alone that it is actually very closes to $P_{real}$. (Theorem 1) A first step to fix this would be to focus on ways to ensure higher diversity, which is a necessary step towards ensuring $P_{synth} \approx P_{real}$.</p>
+
+<p>(b) Our results seem to pose a conundrum about the GANs idea which I personally have not been able to resolve. Usually, we believe that adding capacity to the generator  allows it gain representation power to model more fine-grained facts about the world and thus produce more realistic and diverse distributions. The downside to adding capacity is <em>overfitting</em>, which can be mitigated using more training images. Thus one imagines that the ideal configuration is:</p>
+
+<blockquote>
+  <p>Number of training images &gt;  Generator capacity &gt; Discriminator capacity.</p>
+</blockquote>
+
+<p>Theorem 1 suggests that if discriminator has capacity $n$ then it seems to derive very little benefit (at least in terms of the training objective) from a training set of more than $C (n\log n)/\epsilon^2$ images. Furthermore, there exist equilibria where the generator’s distribution is not too diverse.</p>
+
+<p>So  how can we change GANs training so that it ensures  $P_{synth}$ having high diversity? Some possibilities are 
+(a) cap the generator capacity to be much below discriminator capacity. This might work but I don’t see a mathematical reason why. It certainly flies against the usual intuition that —so long as training dataset is large enough—more capacity allows generators to produce more realistic images. (b) high diversity results from some as-yet unknown property of back propagation algorithm (c) Change GANs setup in some other way.</p>
+
+<p>At the very least our paper suggests that an explanation for good performance in  GANs must draw upon some delicate interplay of the power of generator vs discriminator and the backpropagation algorithm. This fact was overlooked in previous analyses which assumed discriminators of infinite capacity.</p>
+
+<p>(<em>I thank Moritz Hardt, Kunal Talwar, and Luca Trevisan for their comments and help with references.</em>)</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2017/03/30/GANs2/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Generalization and Equilibrium in Generative Adversarial Networks (GANs)&url=http://localhost:4000/2017/03/30/GANs2/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2017/03/30/GANs2/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2017/03/30/GANs2/&title=Generalization and Equilibrium in Generative Adversarial Networks (GANs)" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2017/03/30/GANs2/&title=Generalization and Equilibrium in Generative Adversarial Networks (GANs)" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2017/03/30/GANs2/&t=Generalization and Equilibrium in Generative Adversarial Networks (GANs)" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2017/03/30/GANs2';
+    var disqus_title      = 'Generalization and Equilibrium in Generative Adversarial Networks (GANs)';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

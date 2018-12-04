@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Unsupervised learning, one notion or many? &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2017/06/26/unsupervised1/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Unsupervised learning, one notion or many?">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2017/06/26/unsupervised1/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Unsupervised learning, one notion or many?</h1>
+  <div class="post-meta">
+  
+  Sanjeev Arora and Andrej Risteski &nbsp;&bull;&nbsp;
+  
+  
+  Jun 26, 2017 &nbsp;&bull;&nbsp;
+  
+  
+  
+    15 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p><em>Unsupervised learning</em>, as the name suggests, is the science of learning from unlabeled data. A look at the <a href="https://en.wikipedia.org/wiki/Unsupervised_learning">wikipedia page</a> shows that this term has many interpretations:</p>
+
+<p><strong>(Task A)</strong>  <em>Learning a distribution from samples.</em> (Examples: gaussian mixtures, topic models, variational autoencoders,..)</p>
+
+<p><strong>(Task B)</strong> <em>Understanding latent structure in the data.</em> This is not the same as (a); for example  principal component analysis, clustering, manifold learning etc. identify latent structure but don’t learn a distribution per se.</p>
+
+<p><strong>(Task C)</strong> <em>Feature Learning.</em> Learn a mapping from <em>datapoint</em> $\rightarrow$ <em>feature vector</em> such that classification tasks are easier to carry out on feature vectors rather than datapoints. For example, unsupervised feature learning could help lower the amount of <em>labeled</em> samples needed for learning a classifier, or  be useful for <a href="https://en.wikipedia.org/wiki/Domain_adaptation"><em>domain adaptation</em></a>.</p>
+
+<p>Task B is often a subcase of Task C, as the intended user of “structure found in data” are humans (scientists) who  pour over the representation of data to gain some intuition about its properties, and these “properties” can be often phrased as a classification task.</p>
+
+<p>This post explains the relationship between  Tasks A and C, and why they get mixed up in students’ mind. We hope  there is also some food for thought here for experts, namely, our discussion about the fragility of the usual “perplexity” definition of unsupervised learning. It explains why Task A doesn’t in practice lead to good enough solution for Task C. For example, it has been believed for many years that for deep learning, unsupervised pretraining should help supervised training, but this has been hard to show in practice.</p>
+
+<h2 id="the-common-theme-high-level-representations">The common theme: high level representations.</h2>
+
+<p>If $x$ is a datapoint, each of these methods seeks to map it to a new “high level” representation $h$ that captures its “essence.”
+This is why it helps to have access to $h$ when performing machine learning tasks on $x$ (e.g. classification). 
+The difficulty of course is that  “high-level representation” is not uniquely defined. For example, $x$ may be an image, and $h$ may  contain the information that it contains a person and a dog. But another  $h$ may say that it shows a poodle and a person wearing pyjamas standing on the beach. This nonuniqueness seems inherent.</p>
+
+<p>Unsupervised learning tries to learn high-level representation using unlabeled data.
+Each method make an implicit assumption about how the hidden $h$ relates to the visible $x$. For example, in k-means clustering the hidden $h$ consists of  labeling the datapoint with the index of the cluster it belongs to. 
+Clearly, such a simple clustering-based representation has rather limited  expressive power since it groups datapoints into disjoint classes: this limits its application for complicated settings. For example, if one clusters images according to the labels “human”, “animal” “plant” etc., then which cluster should contain an image showing a man and a dog standing in front of a tree?</p>
+
+<p>The search for a descriptive language for talking about the possible relationships of representations and data leads us naturally to Bayesian models. (Note that these are viewed with some skepticism in  machine learning theory – compared to assumptionless models like PAC learning, online learning, etc. – but we do not know of another suitable vocabulary in this setting.)</p>
+
+<h2 id="a-bayesian-view">A Bayesian view</h2>
+
+<p>Bayesian approaches  capture the relationship between the “high level”  representation $h$ and the datapoint $x$ by postulating a <em>joint distribution</em>  $p_{\theta}(x, h)$ of the data $x$ and representation $h$, such that $p_{\theta}(h)$ and the posterior $p_{\theta}(x \mid h)$ have a simple form as a function of the parameters $\theta$. These are also called <em>latent variable</em> probabilistic models, since $h$ is a latent (hidden) variable.</p>
+
+<p>The standard goal in distribution learning is to find the $\theta$ that “best explains” the data (what we called Task (A)) above). This is formalized using maximum-likelihood estimation going back to Fisher (~1910-1920): find the $\theta$ that maximizes the <em>log probability</em> of the training data. Mathematically, indexing the samples with $t$, we can write this as</p>
+
+<script type="math/tex; mode=display">\max_{\theta} \sum_{t} \log p_{\theta}(x_t)  \qquad (1)</script>
+
+<p>where
+<script type="math/tex">p_{\theta}(x_t) = \sum_{h_t}p_{\theta}(x_t, h_t).</script></p>
+
+<p>(Note that $\sum_{t} \log p_{\theta}(x_t)$ is also the empirical estimate of the <em>cross-entropy</em> 
+$E_{x}[\log p_{\theta}(x)]$ of the distribution $p_{\theta}$, where $x$ is distributed according to $p^*$, the true distribution of the data. Thus the above method looks for the distribution with best cross-entropy on the empirical data, which is also log of the <a href="https://en.wikipedia.org/wiki/Perplexity"><em>perplexity</em></a> of $p_{\theta}$.)</p>
+
+<p>In the limit of $t \to ∞$, this estimator is <em>consistent</em> (converges in probability to the ground-truth value) and <em>efficient</em> (has lowest asymptotic mean-square-error among all consistent estimators). See the <a href="https://en.wikipedia.org/wiki/Maximum_likelihood_estimation">Wikipedia page</a>. (Aside: maximum likelihood estimation is often NP-hard, which is one of the reasons for the renaissance of the method-of-moments and tensor decomposition algorithms in learning latent variable models, which <a href="http://www.offconvex.org/2015/12/17/tensor-decompositions/">Rong  wrote about some time ago</a>.)</p>
+
+<h3 id="toward-task-c-representations-arise-from-the-posterior-distribution">Toward task C: Representations arise from the posterior distribution</h3>
+
+<p>Simply learning the distribution $p_{\theta}(x, h)$ does not yield a representation <em>per se.</em> To get a distribution of $x$, we need access to the posterior $p_{\theta}(h \mid x)$: then a sample from this posterior can be used as a “representation” of a data-point $x$. (Aside: Sometimes, in settings when $p_{\theta}(h \mid x)$ has a simple description, this description can be viewed as the representation of $x$.)</p>
+
+<p>Thus solving Task C requires learning distribution parameters $\theta$  <em>and</em> figuring out how to efficiently sample from the posterior distribution.</p>
+
+<p>Note that the sampling problems for the posterior can be #-P hard for very simple families. The reason is that by Bayes law, $p_{\theta}(h \mid x) = \frac{p_{\theta}(h) p_{\theta}(x \mid h)}{p_{\theta}(x)}$. Even if the numerator is  easy to calculate, as is the case for simple families, the   $p_{\theta}(x)$ involves a big summation (or integral) and is often hard to calculate.</p>
+
+<p>Note that the  max-likelihood parameter estimation (Task A) and approximating the posterior distributions $p(h \mid x)$ (Task C) can have radically different complexities: Sometimes A is easy but C is NP-hard (example: topic modeling with “nice” topic-word matrices, but short documents, see also <a href="https://arxiv.org/abs/1411.6156">Bresler 2015</a>); or vice versa (example: topic modeling with long documents, but worst-case chosen topic matrices <a href="https://arxiv.org/abs/1111.0952">Arora et al. 2011</a>)</p>
+
+<p>Of course, one may hope (as usual) that computational complexity is a worst-case notion and may not apply in practice. But there is a bigger issue with this setup, having to do with accuracy.</p>
+
+<h2 id="why-the-above-reasoning-is-fragile-need-for-high-accuracy">Why the above reasoning is fragile: Need for high accuracy</h2>
+
+<p>The above description assumes that the parametric model $p_{\theta}(x, h)$ for the data was <em>exact</em> whereas one imagines it is only <em>approximate</em> (i.e., suffers from modeling error). Furthermore, computational difficulties may restrict us to use approximately correct inference  even if the model were exact. So in practice, we may only have an <em>approximation</em> $q(h|x)$ to 
+the posterior distribution  $p_{\theta}(h \mid x)$. (Below we describe a popular methods to compute such approximations.)</p>
+
+<blockquote>
+  <p><em>How good of an approximation</em> to the true posterior do we need?</p>
+</blockquote>
+
+<p>Recall, we are trying to answer this question through the lens of Task C, solving some classification task. We take the following point of view:</p>
+
+<blockquote>
+  <p>For $t=1, 2,\ldots,$ nature picked some $(h_t, x_t)$ from the joint distribution  and presented us $x_t$. The true label $y_t$ of $x_t$ is $\mathcal{C}(h_t)$ where  $\mathcal{C}$ is an unknown classifier. Our goal is classify according to these labels.</p>
+</blockquote>
+
+<p>To simplify notation, assume the output of $\mathcal{C}$ is binary. If we wish to use 
+ $q(h \mid x)$ as a surrogate for the true posterior $p_{\theta}(h \mid x)$, we need to have 
+ $\Pr_{x_t, h_t \sim q(\cdot \mid x_t)} [\mathcal{C}(h_t) \neq y_t]$ is small as well.</p>
+
+<p>How close must $q(h \mid x)$ and $p(h \mid x)$ be to let us conclude this? We will use KL divergence as “distance” between the distributions, for reasons that will become apparent in the following section. We claim the following:</p>
+
+<blockquote>
+  <p>CLAIM: The probability of obtaining different answers on classification tasks done using the ground truth $h$ versus the representations obtained using $q(h_t \mid x_t)$ is less than $\epsilon$ if $KL(q(h_t \mid x_t) \parallel p(h_t \mid x_t)) \leq 2\epsilon^2.$</p>
+</blockquote>
+
+<p>Here’s a proof sketch.   The natural distance these two distributions $q(h \mid x)$ and $p(h \mid x)$ with respect to accuracy of classification tasks is <em>total variation (TV)</em> distance. Indeed, if the TV distance between $q(h\mid x)$ and $p(h \mid x)$ is bounded by $\epsilon$, this implies that for any event $\Omega$,</p>
+
+<script type="math/tex; mode=display">\left|\Pr_{h_t \sim p(\cdot \mid x_t)}[\Omega] - \Pr_{h_t \sim q(\cdot \mid x_t)}[\Omega]\right| \leq \epsilon .</script>
+
+<p>The CLAIM now follows by instantiating this with the event $\Omega = $  “Classifier $\mathcal{C}$ outputs a different answer from $y_t$ given representation $h_t$ for input $x_t$”, and relating TV distance to KL divergence using <a href="https://en.wikipedia.org/wiki/Pinsker%27s_inequality">Pinsker’s inequality</a>, which gives</p>
+
+<script type="math/tex; mode=display">\mbox{TV}(q(h_t \mid x_t),p(h_t \mid x_t)) \leq  \sqrt{\frac{1}{2} KL(q(h_t \mid x_t) \parallel p(h_t \mid x_t))} \leq \epsilon</script>
+
+<p>as we needed. This observation explains why solving Task A in practice does not automatically lead to very useful representations for classification tasks (Task C): the posterior distribution has to be learnt extremely accurately, which probably didn’t happen (either due to model mismatch or computational complexity).</p>
+
+<h2 id="the--link-between-tasks-a-and-c-variational-methods">The  link between Tasks A and C: variational methods</h2>
+
+<p>As noted, distribution learning (Task A) via cross-entropy/maximum-likelihood fitting, and representation learning  (Task C) via sampling the posterior are fairly distinct. Why do students often conflate the two?  Because in practice the most frequent way to solve Task A does  implicitly compute posteriors and thus also solves Task C.</p>
+
+<p>The generic way to learn latent variable models involves variational methods, which can be viewed as a generalization of the famous EM algorithm  (<a href="http://web.mit.edu/6.435/www/Dempster77.pdf">Dempster et al. 1977</a>).</p>
+
+<p>Variational methods maintain at all times a <em>proposed distribution</em> $q(h | x)$ (called <em>variational distribution</em>). The methods rely on the observation  that for every such $q(h \mid x)$ the following lower bound holds
+\begin{equation} \log p(x) \geq E_{q(h \mid x)} \log p(x,h) + H(q(h\mid x))  \qquad (2). \end{equation}
+where $H$ denotes Shannon entropy (or differential entropy, depending on whether $x$ is discrete or continuous). The RHS above is often called the <em>ELBO bound</em> (ELBO = evidence-based lower bound). This inequality follows from a bit of algebra using non-negativity of KL divergence, applied to distributions $q(h \mid x)$ and $p(h\mid x)$. More concretely, the chain of inequalities is as follows,</p>
+
+<script type="math/tex; mode=display">KL(q(h\mid x) \parallel p(h \mid x)) \geq 0 \Leftrightarrow E_{q(h|x)} \log \frac{q(h|x)}{p(h|x)} \geq 0</script>
+
+<script type="math/tex; mode=display">\Leftrightarrow  E_{q(h|x)} \log \frac{q(h|x)}{p(x,h)} + \log p(x) \geq 0</script>
+
+<script type="math/tex; mode=display">\Leftrightarrow \log p(x) \geq  E_{q(h|x)} \log p(x,h) + H(q(h\mid x))</script>
+
+<p>Furthermore, <em>equality</em> is achieved if $q(h\mid x) = p(h\mid x)$. (This can be viewed as some kind of “duality” theorem for distributions, and dates all the way back to Gibbs. )</p>
+
+<p>Algorithmically observation (2) is used by foregoing solving the maximum-likelihood optimization (1), and solving instead</p>
+
+<script type="math/tex; mode=display">\max_{\theta, q(h_t|x_t)} \sum_{t} E_{q(h_t\mid x_t)} \log p(x_t,h_t) + H(q(h_t\mid x_t))</script>
+
+<p>Since the variables are naturally divided into two blocks: the model parameters $\theta$, and the variational distributions $q(h_t\mid x_t)$, a natural way to optimize the above is to <em>alternate</em> optimizing over each group, while keeping the other fixed. (This meta-algorithm is often called variational EM for obvious reasons.)</p>
+
+<p>Of course, optimizing over all possible distributions $q$ is an ill-defined problem, so $q$ is constrained to lie in some parametric family (e.g., “ standard Gaussian transformed by depth $4$ neural nets of certain size and architecture”) such the above objective can be easily evaluated at least (typically it has a closed-form expression).</p>
+
+<p>Clearly if the parametric family of distributions  is expressive enough, and the (non-convex) optimization problem doesn’t get stuck in bad local minima, then variational EM algorithm will give us not only values of the parameters $\theta$ which are close to the ground-truth ones, but also variational distributions $q(h\mid x)$ which accurately track $p(h\mid x)$. But as we saw above, this accuracy would need to be very high to get meaningful representations.</p>
+
+<h2 id="next-post">Next Post</h2>
+
+<p>In the next post, we will describe our recent work further clarifying this issue of representation learning via a Bayesian viewpoint.</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2017/06/26/unsupervised1/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Unsupervised learning, one notion or many?&url=http://localhost:4000/2017/06/26/unsupervised1/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2017/06/26/unsupervised1/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2017/06/26/unsupervised1/&title=Unsupervised learning, one notion or many?" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2017/06/26/unsupervised1/&title=Unsupervised learning, one notion or many?" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2017/06/26/unsupervised1/&t=Unsupervised learning, one notion or many?" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2017/06/26/unsupervised1';
+    var disqus_title      = 'Unsupervised learning, one notion or many?';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

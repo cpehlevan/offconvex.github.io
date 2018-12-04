@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>How to Escape Saddle Points Efficiently &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2017/07/19/saddle-efficiency/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="How to Escape Saddle Points Efficiently">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2017/07/19/saddle-efficiency/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>How to Escape Saddle Points Efficiently</h1>
+  <div class="post-meta">
+  
+  Chi Jin and Michael Jordan &nbsp;&bull;&nbsp;
+  
+  
+  Jul 19, 2017 &nbsp;&bull;&nbsp;
+  
+  
+  
+    19 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>A core, emerging problem in nonconvex optimization involves the escape of saddle points.  While recent research has shown that gradient descent (GD) generically escapes saddle points asymptotically (see <a href="http://www.offconvex.org/2016/03/22/saddlepoints/">Rong Ge’s</a> and <a href="http://www.offconvex.org/2016/03/24/saddles-again/">Ben Recht’s</a> blog posts), the critical open problem is one of <strong>efficiency</strong> — is GD able to move past saddle points quickly, or can it be slowed down significantly?  How does the rate of escape scale with the ambient dimensionality?  In this post, we describe <a href="https://arxiv.org/abs/1703.00887">our recent work with Rong Ge, Praneeth Netrapalli and Sham Kakade</a>, that provides the first provable <em>positive</em> answer to the efficiency question, showing that, rather surprisingly, GD augmented with suitable perturbations escapes saddle points efficiently; indeed, in terms of rate and dimension dependence it is almost as if the saddle points aren’t there!</p>
+
+<h2 id="perturbing-gradient-descent">Perturbing Gradient Descent</h2>
+<p>We are in the realm of classical gradient descent (GD) — given a function $f:\mathbb{R}^d \to \mathbb{R}$ we aim to minimize the function by moving in the direction of the negative gradient:</p>
+
+<script type="math/tex; mode=display">x_{t+1} = x_t - \eta \nabla f(x_t),</script>
+
+<p>where $x_t$ are the iterates and $\eta$ is the step size. GD is well understood theorietically in the case of convex optimization, but the general case of nonconvex optimization has been far less studied. We know that GD converges quickly to the neighborhood of stationary points (points where $\nabla f(x) = 0$) in the nonconvex setting, but these stationary points may be local minima or, unhelpfully, local maxima or saddle points.</p>
+
+<p>Clearly GD will never move away from a stationary point if started there (even a local maximum); thus, to provide general guarantees, it is necessary to modify GD slightly to incorporate some degree of randomness. Two simple methods have been studied in the literature:</p>
+
+<ol>
+  <li>
+    <p><strong>Intermittent Perturbations</strong>: <a href="http://arxiv.org/abs/1503.02101">Ge, Huang, Jin and Yuan 2015</a> considered adding occasional random perturbations to GD, and were able to provide the first <em>polynomial time</em> guarantee for GD to escape saddle points.  (See also <a href="http://www.offconvex.org/2016/03/22/saddlepoints/">Rong Ge’s post</a> )</p>
+  </li>
+  <li>
+    <p><strong>Random Initialization</strong>: <a href="http://arxiv.org/abs/1602.04915">Lee et al. 2016</a> showed that with only random initialization, GD provably avoids saddle points asymptotically (i.e., as the number of steps goes to infinity). (see also <a href="http://www.offconvex.org/2016/03/24/saddles-again/">Ben Recht’s post</a>)</p>
+  </li>
+</ol>
+
+<p>Asymptotic — and even polynomial time —results are important for the general theory, but they stop short of explaining the success of gradient-based algorithms in practical nonconvex problems.  And they fail to provide reassurance that runs of GD can be trusted — that we won’t find ourselves in a situation in which the learning curve flattens out for an indefinite amount of time, with the user having no way of knowing that the asymptotics have not yet kicked in. Lastly, they fail to provide reassurance that GD has the kind of favorable properties in high dimensions that it is known to have for convex problems.</p>
+
+<p>One reasonable approach to this issue is to consider second-order (Hessian-based) algorithms.  Although these algorithms are generally (far) more expensive per iteration than GD, and can be more complicated to implement, they do provide the kind of geometric information around saddle points that allows for efficient escape. Accordingly, a reasonable understanding of Hessian-based algorithms has emerged in the literature, and positive efficiency results have been obtained.</p>
+
+<p><strong><em>Is GD also efficient? Or is the Hessian necessary for fast escape of saddle points?</em></strong></p>
+
+<p>A negative result emerges to this first question if one considers the random initialization strategy discussed. Indeed, this approach is provably <em>inefficient</em> in general, taking exponential time to escape saddle points in the worst case (see “On the Necessity of Adding Perturbations” section).</p>
+
+<p>Somewhat surprisingly, it turns out that we obtain a rather different — and <em>positive</em> — result if we consider the perturbation strategy.  To be able to state this result, let us be clear on the algorithm that we analyze:</p>
+
+<blockquote>
+  <p><strong>Perturbed gradient descent (PGD)</strong></p>
+  <ol>
+    <li><strong>for</strong> $~t = 1, 2, \ldots ~$ <strong>do</strong></li>
+    <li>$\quad\quad x_{t} \leftarrow x_{t-1} - \eta \nabla f (x_{t-1})$</li>
+    <li>$\quad\quad$ <strong>if</strong> $~$<em>perturbation condition holds</em>$~$ <strong>then</strong></li>
+    <li>$\quad\quad\quad\quad x_t \leftarrow x_t + \xi_t$</li>
+  </ol>
+</blockquote>
+
+<p>Here the perturbation $\xi_t$ is sampled uniformly from a ball centered at zero with a suitably small radius, and is added to the iterate when the gradient is suitably small. These particular choices are made for analytic convenience; we do not believe that uniform noise is necessary. nor do we believe it essential that noise be added only when the gradient is small.</p>
+
+<h2 id="strict-saddle-and-second-order-stationary-points">Strict-Saddle and Second-order Stationary Points</h2>
+<p>We define <em>saddle points</em> in this post to include both classical saddle points as well as local maxima.  They are stationary points which are locally maximized along <em>at least one direction</em>.  Saddle points and local minima can be categorized according to the minimum eigenvalue of Hessian:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\lambda_{\min}(\nabla^2 f(x))  \begin{cases}
+                        > 0 \quad\quad  \text{local minimum} \\
+                        = 0 \quad\quad  \text{local minimum or saddle point} \\
+                        < 0 \quad\quad  \text{saddle point}
+                    \end{cases} %]]></script>
+
+<p>We further call the saddle points in the last category, where $\lambda_{\min}(\nabla^2 f(x)) &lt; 0$, <strong>strict saddle points</strong>.</p>
+
+<p style="text-align:center;">
+<img src="/assets/saddle_eff/strictsaddle.png" width="85%" alt="Strict and Non-strict Saddle Point" />
+</p>
+
+<p>While non-strict saddle points can be flat in the valley, strict saddle points require that there is <em>at least one direction</em> along which the curvature is strictly negative. The presence of such a direction gives a gradient-based algorithm the possibility of escaping the saddle point.  In general, distinguishing local minima and non-strict saddle points is <em>NP-hard</em>; therefore, we — and previous authors — focus on escaping <em>strict</em> saddle points.</p>
+
+<p>Formally, we make the following two standard assumptions regarding smoothness.</p>
+
+<blockquote>
+  <p><strong>Assumption 1</strong>: $f$ is $\ell$-gradient-Lipschitz, i.e. <br />
+$\quad\quad\quad\quad \forall x_1, x_2, |\nabla f(x_1) - \nabla f(x_2)| \le \ell |x_1 - x_2|$. <br />
+$~$<br />
+ <strong>Assumption 2</strong>: $f$ is $\rho$-Hessian-Lipschitz, i.e. <br />
+$\quad\quad\quad\quad \forall x_1, x_2$, $|\nabla^2 f(x_1) - \nabla^2 f(x_2)| \le \rho |x_1 - x_2|$.</p>
+</blockquote>
+
+<p>Similarly to classical theory, which studies convergence to a first-order stationary point, $\nabla f(x) = 0$, by bounding the number of iterations to find a <strong>$\epsilon$-first-order stationary point</strong>,  $|\nabla f(x)| \le \epsilon$, we formulate the speed of escape of strict saddle points and the ensuing convergence to a second-order stationary point, $\nabla f(x) = 0, \lambda_{\min}(\nabla^2 f(x)) \ge 0$, with an $\epsilon$-version of the definition:</p>
+
+<blockquote>
+  <p><strong>Definition</strong>: A point $x$ is an <strong>$\epsilon$-second-order stationary point</strong> if:<br />
+$\quad\quad\quad\quad |\nabla f(x)|\le \epsilon$, and $\lambda_{\min}(\nabla^2 f(x)) \ge -\sqrt{\rho \epsilon}$.</p>
+</blockquote>
+
+<p>In this definition, $\rho$ is the Hessian Lipschitz constant introduced above. This scaling follows the convention of <a href="http://rd.springer.com/article/10.1007%2Fs10107-006-0706-8">Nesterov and Polyak 2006</a>.</p>
+
+<h3 id="applications">Applications</h3>
+<p>In a wide range of practical nonconvex problems it has been proved that <strong>all saddle points are strict</strong> — such problems include, but not are limited to, principal components analysis, canonical correlation analysis, 
+<a href="http://arxiv.org/abs/1503.02101">orthogonal tensor decomposition</a>, 
+<a href="http://arxiv.org/abs/1602.06664">phase retrieval</a>,
+<a href="http://arxiv.org/abs/1504.06785">dictionary learning</a>,
+<!-- matrix factorization,  -->
+<a href="http://arxiv.org/abs/1605.07221">matrix sensing</a>, 
+<a href="http://arxiv.org/abs/1605.07272">matrix completion</a>, 
+and <a href="http://arxiv.org/abs/1704.00708">other nonconvex low-rank problems</a>.</p>
+
+<p>Furthermore, in all of these nonconvex problems, it also turns out that <strong>all local minima are global minima</strong>. Thus, in these cases, any general efficient algorithm for finding $\epsilon$-second-order stationary points immediately becomes an efficient algorithm for solving those nonconvex problem with global guarantees.</p>
+
+<h2 id="escaping-saddle-point-with-negligible-overhead">Escaping Saddle Point with Negligible Overhead</h2>
+<p>In the classical case of first-order stationary points, GD is known to have very favorable theoretical properties:</p>
+
+<blockquote>
+  <p><strong>Theorem (<a href="http://rd.springer.com/book/10.1007%2F978-1-4419-8853-9">Nesterov 1998</a>)</strong>: If Assumption 1 holds, then GD, with $\eta = 1/\ell$, finds an $\epsilon$-<strong>first</strong>-order stationary point in $2\ell (f(x_0) - f^\star)/\epsilon^2$ iterations.</p>
+</blockquote>
+
+<p>In this theorem, $x_0$ is the initial point and $f^\star$ is the function value of the global minimum. The theorem says for that any gradient-Lipschitz function, a stationary point can be found by GD in $O(1/\epsilon^2)$ steps, with no explicit dependence on $d$. This is called “dimension-free optimization” in the literature; of course the cost of a gradient computation is $O(d)$, and thus the overall runtime of GD scales as $O(d)$. The linear scaling in $d$ is especially important for modern high-dimensional nonconvex problems such as deep learning.</p>
+
+<p>We now wish to address the corresponding problem for second-order stationary points.
+What is the best we can hope for? Can we also achieve</p>
+<ol>
+  <li>A dimension-free number of iterations;</li>
+  <li>An $O(1/\epsilon^2)$ convergence rate;</li>
+  <li>The same dependence on $\ell$ and $(f(x_0) - f^\star)$ as in (Nesterov 1998)?</li>
+</ol>
+
+<p>Rather surprisingly, the answer is <em>Yes</em> to all three questions (up to small log factors).</p>
+
+<blockquote>
+  <p><strong>Main Theorem</strong>: If Assumptions 1 and 2 hold, then PGD, with $\eta = O(1/\ell)$, finds an $\epsilon$-<strong>second</strong>-order stationary point in $\tilde{O}(\ell (f(x_0) - f^\star)/\epsilon^2)$ iterations with high probability.</p>
+</blockquote>
+
+<p>Here $\tilde{O}(\cdot)$ hides only logarithmic factors; indeed, the dimension dependence in our result is only $\log^4(d)$. The theorem thus asserts that a perturbed form of GD, under an additional Hessian-Lipschitz condition, <strong><em>converges to a second-order-stationary point in almost the same time required for GD to converge to a first-order-stationary point.</em></strong> In this sense, we claim that PGD can escape strict saddle points almost for free.</p>
+
+<p>We turn to a discussion of some of the intuitions underlying these results.</p>
+
+<h3 id="why-do-polylogd-iterations-suffice">Why do polylog(d) iterations suffice?</h3>
+<p>Our strict-saddle assumption means that there is only, in the worst case, one direction in $d$ dimensions along which we can escape. A naive search for the descent direction intuitively should take at least $\text{poly}(d)$ iterations, so why should only $\text{polylog}(d)$ suffice?</p>
+
+<p>Consider a simple case in which we assume that the function is quadratic in the neighborhood of the saddle point.  That is, let the objective function be $f(x) = x^\top H x$, a saddle point at zero, with constant Hessian $H = \text{diag}(-1, 1, \cdots, 1)$. In this case, only the first direction is an escape direction (with negative eigenvalue $-1$).</p>
+
+<p>It is straightforward to work out the general form of the iterates in this case:</p>
+
+<script type="math/tex; mode=display">x_t = x_{t-1} - \eta \nabla f(x_{t-1}) = (I - \eta H)x_{t-1} = (I - \eta H)^t x_0.</script>
+
+<p>Assume that we start at the saddle point at zero, then add a perturbation so that $x_0$ is sampled uniformly from a ball $\mathcal{B}_0(1)$ centered at zero with radius one.
+The decrease in the function value can be expressed as:</p>
+
+<script type="math/tex; mode=display">f(x_t) - f(0) = x_t^\top H x_t  = x_0^\top (I - \eta H)^t H (I - \eta H)^t x_0.</script>
+
+<p>Set the step size to be $1/2$, let $\lambda_i$ denote the $i$-th eigenvalue of the Hessian $H$ and let $\alpha_i = e_i^\top x_0$ denote the component in the $i$th direction of the initial point $x_0$. We have $\sum_{i=1}^d \alpha_i^2  = | x_0|^2 = 1$, thus:</p>
+
+<script type="math/tex; mode=display">f(x_t) - f(0) = \sum_{i=1}^d \lambda_i (1-\eta\lambda_i)^{2t} \alpha_i^2 \le  -1.5^{2t} \alpha_1^2 + 0.5^{2t}.</script>
+
+<p>A simple probability argument shows that sampling uniformly in $\mathcal{B}_0(1)$ will result in at least a $\Omega(1/d)$ component in the first direction with high probability. That is, $\alpha^2_1 = \Omega(1/d)$. Substituting $\alpha_1$ in the above equation, we see that it takes at most $O(\log d)$ steps for the function value to decrease by a constant amount.</p>
+
+<h3 id="pancake-shape-stuck-region-for-general-hessian">Pancake-shape stuck region for general Hessian</h3>
+<p>We can conclude that for the case of a constant Hessian, only when the perturbation $x_0$ lands in the set $\{x | ~ |e_1^\top x|^2 \le O(1/d)\}$ $\cap \mathcal{B}_0 (1)$, can we take a very long time to escape the saddle point. We call this set the <strong>stuck region</strong>; in this case it is a flat disk. In general, when the Hessian is no longer constant, the stuck region becomes a non-flat pancake, depicted as a green object in the left graph. In general this region will not have an analytic expression.</p>
+
+<p>Earlier attempts to analyze the dynamics around saddle points tried to the approximate stuck region by a flat set.  This results in a requirement of an extremely small step size and a correspondingly very large runtime complexity.  Our sharp rate depends on a key observation — <em>although we don’t know the shape of the stuck region, we know it is very thin</em>.</p>
+
+<p style="text-align:center;">
+<img src="/assets/saddle_eff/flow.png" width="85%" alt="Pancake" />
+</p>
+
+<p>In order to characterize the “thinness” of this pancake, we studied pairs of hypothetical perturbation points $w, u$ separated by $O(1/\sqrt{d})$ along an escaping direction. We claim that if we run GD starting at $w$ and $u$, at least one of the resulting trajectories will escape the saddle point very quickly. This implies that the thickness of the stuck region can be at most $O(1/\sqrt{d})$, so a random perturbation has very little chance to land in the stuck region.</p>
+
+<h2 id="on-the-necessity-of-adding-perturbations">On the Necessity of Adding Perturbations</h2>
+<p>We have discussed two possible ways to modify the standard gradient descent algorithm, the first by adding intermittent perturbations, and the second by relying on random initialization. Although the latter exhibits asymptotic convergence, it does not yield efficient convergence in general; in recent <a href="http://arxiv.org/abs/1705.10412">joint work with Simon Du, Jason Lee, Barnabas Poczos, and Aarti Singh</a>, we have shown that even with fairly natural random initialization schemes and non-pathological functions, <strong>GD with only random initialization can be significantly slowed by saddle points, taking exponential time to escape. The behavior of PGD is strikingingly different — it can generically escape saddle points in polynomial time.</strong></p>
+
+<p>To establish this result, we considered random initializations from a very general class including Gaussians and uniform distributions over the hypercube, and we constructed a smooth objective function that satisfies both Assumptions 1 and 2. This function is constructed such that, even with random initialization, with high probability both GD and PGD have to travel sequentially in the vicinity of $d$ strict saddle points before reaching a local minimum. All strict saddle points have only one direction of escape. (See the left graph for the case of $d=2$).</p>
+
+<p><img src="/assets/saddle_eff/necesperturbation.png" alt="NecessityPerturbation" /></p>
+
+<p>When GD travels in the vicinity of a sequence of saddle points, it can get closer and closer to the later saddle points, and thereby take longer and longer to escape. Indeed, the time to escape the $i$th saddle point scales as $e^{i}$. On the other hand, PGD is always able to escape any saddle point in a small number of steps independent of the history. This phenomenon is confirmed by our experiments; see, for example, an experiment with $d=10$ in the right graph.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>In this post, we have shown that a perturbed form of gradient descent can converge to a second-order-stationary point at almost the same rate as standard gradient descent converges to a first-order-stationary point. This implies that Hessian information is not necessary for to escape saddle points efficiently, and helps to explain why basic gradient-based algorithms such as GD (and SGD) work surprisingly well in the nonconvex setting. This new line of sharp convergence results can be directly applied to nonconvex problem such as matrix sensing/completion to establish efficient global convergence rates.</p>
+
+<p>There are of course still many open problems in general nonconvex optimization. To name a few: will adding momentum improve the convergence rate to a second-order stationary point? What type of local minima are tractable and are there useful structural assumptions that we can impose on local minima so as to avoid local minima efficiently? We are making slow but steady progress on nonconvex optimization, and there is the hope that at some point we will transition from “black art” to “science”.</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2017/07/19/saddle-efficiency/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=How to Escape Saddle Points Efficiently&url=http://localhost:4000/2017/07/19/saddle-efficiency/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2017/07/19/saddle-efficiency/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2017/07/19/saddle-efficiency/&title=How to Escape Saddle Points Efficiently" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2017/07/19/saddle-efficiency/&title=How to Escape Saddle Points Efficiently" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2017/07/19/saddle-efficiency/&t=How to Escape Saddle Points Efficiently" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2017/07/19/saddle-efficiency';
+    var disqus_title      = 'How to Escape Saddle Points Efficiently';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

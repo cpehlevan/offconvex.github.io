@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Stability as a foundation of machine learning &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Stability as a foundation of machine learning">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/03/14/stability/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Stability as a foundation of machine learning">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/03/14/stability/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Stability as a foundation of machine learning</h1>
+  <div class="post-meta">
+  
+  Moritz Hardt &nbsp;&bull;&nbsp;
+  
+  
+  Mar 14, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    11 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>Central to machine learning is our ability to relate how a learning algorithm fares on a sample to its performance on unseen instances. This is called <em>generalization</em>.</p>
+
+<p>In this post, I will describe a purely algorithmic approach to generalization. The property that makes this possible is <em>stability</em>. An algorithm is <em>stable</em>, intuitively speaking, if its output doesn’t change much if we perturb the input sample in a single point. We will see that this property by itself is necessary and sufficient for generalization.</p>
+
+<h2 id="example-stability-of-the-perceptron-algorithm">Example: Stability of the Perceptron algorithm</h2>
+
+<p>Before we jump into the formal details, let’s consider a simple example of a stable algorithm: The <a href="https://en.wikipedia.org/wiki/Perceptron">Perceptron</a>, aka stochastic gradient descent for learning linear separators! The algorithm aims to separate two classes of points (here circles and triangles) with a linear separator. The algorithm starts with an arbitrary hyperplane. It then repeatedly selects a single example from its input set and updates its hyperplane using the gradient of a certain loss function on the chosen example. How bad might the algorithm screw up if we move around a single example? Let’s find out.</p>
+
+<p><!-- begin animation --></p>
+<div style="text-align:center;">
+   <img id="imganim" src="/assets/sgd/00.png" onclick="forward_image()" />
+   <p style="text-align:center;"><em>Step <span style="font-family:monospace;"><span id="counter">1</span>/30</span>. Click to advance.<br /> The animation shows two runs of the Perceptron algorithm for learning a linear separator on two data sets that differ in the one point marked green in one data set and purple in the other. The perturbation is indicated by an arrow. The shaded green region shows the difference in the resulting two hyperplanes after some number of steps. </em></p>
+  </div>
+<script type="text/javascript">//<![CDATA[
+  var images = [
+  "/assets/sgd/00.png",
+  "/assets/sgd/01.png",
+  "/assets/sgd/02.png",
+  "/assets/sgd/03.png",
+  "/assets/sgd/04.png",
+  "/assets/sgd/05.png",
+  "/assets/sgd/06.png",
+  "/assets/sgd/07.png",
+  "/assets/sgd/08.png",
+  "/assets/sgd/09.png",
+  "/assets/sgd/10.png",
+  "/assets/sgd/11.png",
+  "/assets/sgd/12.png",
+  "/assets/sgd/13.png",
+  "/assets/sgd/14.png",
+  "/assets/sgd/15.png",
+  "/assets/sgd/16.png",
+  "/assets/sgd/17.png",
+  "/assets/sgd/18.png",
+  "/assets/sgd/19.png",
+  "/assets/sgd/20.png", 
+  "/assets/sgd/21.png",
+  "/assets/sgd/22.png",
+  "/assets/sgd/23.png",
+  "/assets/sgd/24.png",
+  "/assets/sgd/25.png",
+  "/assets/sgd/26.png",
+  "/assets/sgd/27.png",
+  "/assets/sgd/28.png",
+  "/assets/sgd/29.png" ]
+  var i = 0
+  function forward_image(){
+   i = i + 1;
+   document.getElementById('imganim').src = images[i%30];
+   document.getElementById('counter').textContent = (i%30) + 1;
+  }
+  //]]> 
+  </script>
+
+<p><!-- end animation --></p>
+
+<p>As we can see by clicking impatiently through the example, the algorithm seems pretty stable. Even if we substantially move the first example it encounters, the hyperplane computed by the algorithm changes only slightly. Neat. (You can check out the code <a href="https://gist.github.com/mrtzh/266c37d3a274376134a6">here</a>.)</p>
+
+<h2 id="empirical-risk-jargon">Empirical risk jargon</h2>
+
+<p>Let’s introduce some terminology to relate the behavior of an algorithm on a sample to its behavior on unseen instances. Imagine we have a sample $S=(z_1,\dots,z_n)$ drawn i.i.d. from some unknown distribution $D$. There’s a learning algorithm $A(S)$ that takes $S$ and produces some model (e.g., the hyperplane in the above picture). To quantify the quality of the model we crank out a <em>loss function</em> $\ell$ with the idea that $\ell(A(S), z)$ describes the <em>loss</em> of the model $A(S)$ on one instance $z$. The <em>empirical risk</em> or <em>training error</em> of the algorithm is defined as:</p>
+
+<script type="math/tex; mode=display">R_S = \frac1n \sum_{i=1}^n \ell(A(S), z_i)</script>
+
+<p>This captures the average loss of the algorithm on the sample on which it was trained. To quantify <em>out-of-sample</em> performance, we define the <em>risk</em> of the algorithm as:</p>
+
+<script type="math/tex; mode=display">R = \mathop{\mathbb{E}}_{z\sim D}\left[ \ell(A(S), z) \right]</script>
+
+<p>The difference between risk and empirical risk $R - R_S$ is called <em>generalization error</em>. You will sometimes encounter that term as a synonym for risk, but I find that confusing. We already have a perfectly short and good name for the risk $R$. Always keep in mind the following tautology</p>
+
+<script type="math/tex; mode=display">R = R_S + (R-R_S).</script>
+
+<p>Operationally, it states that if we manage to minimize empirical risk all that matters is generalization error.</p>
+
+<h2 id="a-fundamental-theorem-of-machine-learning">A fundamental theorem of machine learning</h2>
+
+<p>I probably shouldn’t propose fundamental theorems for anything really. But if I had to, this would be the one I’d suggest for machine learning:</p>
+
+<blockquote>
+  <p>In expectation, generalization equals stability.</p>
+</blockquote>
+
+<p>Somewhat more formally, we will encounter a natural measure of stability, denoted $\Delta$ such that the difference between risk and empirical risk in expectation equals $\Delta.$ Formally,</p>
+
+<blockquote>
+  <p>$\mathbb{E}[R - R_S] = \Delta$</p>
+</blockquote>
+
+<p>Deferring the exact definition of $\Delta$ to the proof, let’s think about this for a second.
+What I find so remarkable about this theorem is that it turns a statistical problem into a purely algorithmic one: All we need for generalization is an algorithmic notion of robustness. Our algorithm’s output shouldn’t change much if perturb one of the data points. It’s almost like a sanity check. Had you coded up an algorithm and this wasn’t the case, you’d probably go look for a bug.</p>
+
+<h3 id="proof">Proof</h3>
+
+<p>Consider two data sets of size $n$ drawn independently of each other:
+[
+S = (z_1,\dots,z_n), \qquad S’=(z_1’,\dots,z_n’)
+]
+The idea of taking such a <em>ghost sample</em> $S’$ is quite old and already arises in the context of <em>symmetrization</em> in empirical process theory.
+We’re going to couple these two samples in one point by defining
+[
+S^i = (z_1,\dots,z_{i-1},z_i’,z_{i+1},\dots,z_n),\qquad i = 1,\dots, n.
+]
+It’s certainly no coincidence that $S$ and $S^i$ differ in exactly one element. We’re going to use this in just a moment.</p>
+
+<p>By definition, the <em>expected empirical risk</em> equals</p>
+
+<script type="math/tex; mode=display">\mathbb{E}[R_S] = \mathbb{E}\left[ \frac1n \sum_{i=1}^n \ell(A(S), z_i) \right].</script>
+
+<p>Contrasting this to how the algorithm fares on unseen examples, we can rewrite the <em>expected risk</em> using our ghost sample as:</p>
+
+<script type="math/tex; mode=display">\mathbb{E}[R] = \mathbb{E}\left[ \frac1n \sum_{i=1}^n \ell(A(S), \color{red}{z_i'}) \right]</script>
+
+<p>All expectations we encounter are over both $S$ and $S’$. By linearity of expectation, the difference between expected risk and expected empirical risk equals</p>
+
+<script type="math/tex; mode=display">\mathbb{E}[R - R_S] 
+= \frac1n \sum_{i=1}^n 
+\mathbb{E}\left[\ell(A(S), \color{red}{z_i'})-\ell(A(S), z_i)\right].</script>
+
+<p>It is tempting now to relate the two terms inside the expectation to the stability of the algorithm. We’re going to do exactly that using mathematics’ most trusted proof strategy: <em>pattern matching</em>. Indeed, since $z_i$ and $z_i’$ are exchangeable, we have</p>
+
+<script type="math/tex; mode=display">\mathbb{E}[\ell(A(S), z_i)] 
+= \mathbb{E}[\ell(A(S^i), z_i')]
+= \mathbb{E}[\ell(A(S), z_i')] - \delta_i,</script>
+
+<p>where $\delta_i$ is defined to make the second equality true:</p>
+
+<script type="math/tex; mode=display">\delta_i = \mathbb{E}[\ell(A(\color{red}S), z_i')- \ell(A(\color{red}{S^i}), z_i')]</script>
+
+<p>Summing up $\Delta = (1/n)\sum_i \delta_i$, we have</p>
+
+<script type="math/tex; mode=display">\mathbb{E}[ R - R_S ] = \Delta.</script>
+
+<p>The only thing left to do is to interpret the right hand side in terms of stability. Convince yourself that $\delta_i$ measures how differently the algorithm behaves on two data sets $S$ and $S’$ that differ in only one element.</p>
+
+<h3 id="uniform-stability">Uniform stability</h3>
+
+<p>It can be difficult to analyze the expectation in the definition of $\Delta$ precisely. Fortunately, it is often enough to resolve the expectation by upper bounding it with suprema:</p>
+
+<script type="math/tex; mode=display">|\Delta| \le \sup_{S,S'} \sup_{z} \left|\ell(A(S),z)-\ell(A(S'),z)\right|.</script>
+
+<p>The supremum runs over all valid data sets differing in only one element and all valid sample points $z$. This stronger notion of stability called <em>uniform stability</em> 
+goes back to a seminal paper by Bousquett and Elisseeff.</p>
+
+<p>I should say that you can find the above proof in the essssential stability paper by Shalev-Shwartz, Shamir, Srebro and Sridharan <a href="http://jmlr.csail.mit.edu/papers/volume11/shalev-shwartz10a/shalev-shwartz10a.pdf">here</a>.</p>
+
+<h3 id="concentration-from-stability">Concentration from stability</h3>
+
+<p>The theorem we saw shows that <em>expected</em> empirical risk equals risk up to a correction that involves the stability of the algorithm. Can we also show that empirical risk is close to its expectation with high probability? Interestingly, we can by appealing to stability once again. I won’t spell out the details, but we can use the <a href="https://en.wikipedia.org/wiki/Doob_martingale#McDiarmid.27s_inequality">method of bounded differences</a> to obtain strong concentration bounds. To apply the method we need a <em>bounded difference</em> condition which is just another word for <em>stability</em>. So, we’re really killing two birds with one stone by using stability not only to show that the first moment of the empirical risk is correct but also that it concentrates. The only wrinkle is that, as far as I know, the weak stability notion expressed by $\Delta$ is not enough to get concentration, but uniform stability (for sufficiently small difference) will do.</p>
+
+<h2 id="applications-of-stability">Applications of stability</h2>
+
+<p>There is much more that stability can do for us. We’ve only scratched on the surface. Here are some of the many applications of stability.</p>
+
+<ul>
+  <li>
+    <p><a href="http://www.jmlr.org/papers/volume2/bousquet02a/bousquet02a.pdf">Regularization implies stability</a>. Specifically, the minimizer of the empirical risk subject to an $\ell_2$-penalty is uniformly stable.</p>
+  </li>
+  <li>
+    <p><a href="http://arxiv.org/abs/1509.01240">Stochastic gradient descent is stable</a> provided that we don’t make too many steps.</p>
+  </li>
+  <li>
+    <p>Differential privacy is nothing but a strong stability guarantee. Any result ever proved about differential privacy is fundamentally about stability.</p>
+  </li>
+  <li>
+    <p>Differential privacy in turn has applications to preventing overfitting in <a href="http://blog.mrtz.org/2015/12/14/adaptive-data-analysis.html">adaptive data analysis</a>.</p>
+  </li>
+  <li>
+    <p>Stability also has many beautiful applications and connections in statistics. I strongly encourage you to read Bin Yu’s beautiful <a href="https://www.stat.berkeley.edu/~binyu/ps/papers2013/Yu13.pdf">overview paper</a> on the topic.</p>
+  </li>
+</ul>
+
+<p>Looking ahead, I’ve got at least two more posts planned on this.</p>
+
+<p>In my next post I will go into the stability of stochastic gradient descent in detail. We will see a simple argument to show that stochastic gradient descent is uniformly stable. I will then work towards applying these ideas to the area of deep learning. We will see that stability can help us explain why even huge models sometimes generalize well and how we can make them generalize even better.</p>
+
+<p>In a second post I will reflect on stability as a paradigm for reliable machine learning. The focus will be on how ideas from stability can help avoid overfitting and false discovery.</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/03/14/stability/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Stability as a foundation of machine learning&url=http://localhost:4000/2016/03/14/stability/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/03/14/stability/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/03/14/stability/&title=Stability as a foundation of machine learning" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/03/14/stability/&title=Stability as a foundation of machine learning" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/03/14/stability/&t=Stability as a foundation of machine learning" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/03/14/stability';
+    var disqus_title      = 'Stability as a foundation of machine learning';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

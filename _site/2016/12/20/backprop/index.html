@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Back-propagation, an introduction &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/12/20/backprop/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Back-propagation, an introduction">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/12/20/backprop/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Back-propagation, an introduction</h1>
+  <div class="post-meta">
+  
+  Sanjeev Arora and Tengyu Ma &nbsp;&bull;&nbsp;
+  
+  
+  Dec 20, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    21 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>Given the sheer number of backpropagation tutorials on the internet, is there really need for another? One of us (Sanjeev) recently taught backpropagation in <a href="https://www.cs.princeton.edu/courses/archive/fall16/cos402/">undergrad AI</a> and couldn’t find any account he was happy with. So here’s our exposition, together with some history and context, as well as a few advanced notions at the end. This article assumes the reader knows the definitions of gradients and neural networks.</p>
+
+<h2 id="what-is-backpropagation">What is backpropagation?</h2>
+
+<p>It is the basic algorithm in training neural nets, apparently independently rediscovered several times in the 1970-80’s (e.g., see Werbos’ <a href="https://www.researchgate.net/publication/35657389_Beyond_regression_new_tools_for_prediction_and_analysis_in_the_behavioral_sciences">Ph.D. thesis</a> and <a href="http://www.wiley.com/WileyCDA/WileyTitle/productCd-0471598976.html">book</a>, and <a href="http://www.nature.com/nature/journal/v323/n6088/abs/323533a0.html">Rumelhart et al.</a>). Some related ideas existed in control theory in the 1960s. (One reader points out another independent rediscovery, the Baur-Strassen lemma from 1983.)</p>
+
+<p>Backpropagation gives a fast way to compute the sensitivity of the output of a neural network to all of its parameters while keeping the inputs of the network fixed: specifically it computes all partial derivatives ${\partial f}/{\partial w_i}$ where $f$ is the output and $w_i$ is the $i$th parameter. (Here <em>parameters</em> can be edge weights or biases associated with nodes or edges of the network, and the precise details of the node computations —e.g., the precise form of nonlinearity like Sigmoid or RELU— are unimportant.)  Doing so gives the <em>gradient</em> $\nabla f$ of $f$ with respect to its  network parameters, which allows a <em>gradient descent</em> step in the training: change all parameters simultaneously to move the vector of parameters  a small amount in the direction $-\nabla f$.</p>
+
+<p>Note that backpropagation computes the gradient exactly, but properly training neural nets needs many more tricks than just backpropagation. Understanding backpropagation is useful for appreciating some advanced tricks.</p>
+
+<p>The importance of backpropagation derives from its efficiency. Assuming node operations take unit time, the running time is <em>linear</em>, specifically, $O(\text{Network Size}) = O(V + E)$, where $V$ is the number of nodes in the network and $E$ is the number of edges.  The only technical ingredient  is chain rule from calculus, but applying it naively would have resulted in quadratic running time—which would be hugely inefficient  for networks with millions or even thousands of parameters.</p>
+
+<p>Backpropagation can be efficiently implemented using highly parallel vector operations available  in today’s <a href="https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units">GPUs (Graphical Processing Units)</a>, which play an important role in the the recent neural nets revolution.</p>
+
+<p><strong>Side Note:</strong> Expert readers will recognize that in the standard accounts of neural net training,
+the actual quantity of interest is the gradient of the <em>training loss</em>, which happens to be a  simple function of the network output. But the above phrasing is fully general since  one can simply add a new output node to the network that computes the training loss from the old output. Then the quantity of interest is indeed the gradient of this new output with respect to network parameters.</p>
+
+<h2 id="problem-setup">Problem Setup</h2>
+
+<p>Backpropagation applies only to acyclic networks with directed edges. (Later we briefly sketch its use on networks with cycles.)</p>
+
+<p>Without loss of generality, acyclic networks can be visualized as being structured in numbered layers,  with nodes in the $t+1$th layer getting all their inputs from the outputs of nodes in layers $t$ and earlier. We use $f \in \mathbb{R}$ to denote the output of the network. In all our figures, the input of the network is at the bottom and the output on the top.</p>
+
+<p>We start with a simple claim that reduces the problem of computing the gradient to the problem of computing partial derivatives with respect to the nodes:</p>
+
+<blockquote>
+  <p><strong>Claim 1:</strong> To compute the desired gradient with respect to the parameters, it suffices to compute $\partial f/\partial u$ for every node $u$.</p>
+</blockquote>
+
+<p>Let’s be clear what $\partial f/\partial u$ means. Suppose we cut off all the incoming edges of the node $u$, and fix/clamp the current values of all network parameters. Now imagine changing $u$ from its current value. This change may affect values of nodes at higher levels that are connected to $u$,  and the final output $f$ is one such node.  Then $\partial f/\partial u$ denotes the rate at which $f$ will change as we vary $u$. (Aside: Readers familiar with the usual exposition of back-propagation should note that there $f$ is the training error and this $\partial f/\partial u$ turns out to be exactly the “error” propagated back  to on the node $u$.)</p>
+
+<p>Claim 1 is a direct application of chain rule, and let’s illustrate it for a simple neural nets (we address more general networks later). Suppose node $u$ is a weighted sum of the nodes $z_1,\dots, z_m$ (which will be passed through a non-linear activation $\sigma$ afterwards). That is, we have $u = w_1z_1+\dots+w_nz_n$. By Chain rule, we have</p>
+
+<script type="math/tex; mode=display">\frac{\partial f}{\partial w_1} = \frac{\partial f}{\partial u}\cdot \frac{\partial{u}}{\partial w_1} = \frac{\partial f}{\partial u}\cdot z_1.</script>
+
+<p>Hence, we see that having computed $\partial f/\partial u$ we can compute $\partial f/\partial w_1$, and moreover this can be done locally by the endpoints of the edge where $w_1$ resides.</p>
+
+<div style="text-align:center;">
+<img style="width:500px;" src="http://ai.stanford.edu/~tengyuma/forblog/weight5.jpg" />
+</div>
+
+<h3 id="multivariate-chain-rule">Multivariate Chain Rule</h3>
+
+<p>Towards computing the derivatives with respect to the nodes, we first recall the multivariate Chain rule, which handily describes the relationships between these partial derivatives (depending on the graph structure).</p>
+
+<p>Suppose a variable $f$ is a function of variables $u_1,\dots, u_n$, which in turn depend on the variable $z$. Then, multivariate Chain rule says that</p>
+
+<script type="math/tex; mode=display">\frac{\partial f}{\partial z} = \sum_{j=1}^n \frac{\partial f}{\partial u_j}\cdot \frac{\partial u_j}{\partial z}~.</script>
+
+<p>This is a direct generalization of eqn. (2) and a sub-case of eqn. (11) in this <a href="http://mathworld.wolfram.com/ChainRule.html">description of chain rule</a>.</p>
+
+<p>This formula is perfectly suitable for our cases. Below is the same example as we used before but with a different focus and numbering of the nodes.</p>
+
+<div style="text-align:center;">
+<img style="width:500px;" src="http://ai.stanford.edu/~tengyuma/forblog/chain_rule_5.jpg" />
+</div>
+
+<p>We see that given we’ve computed the derivatives with respect to all the nodes that is above the node $z$, we can compute the derivative with respect to the node $z$ via a weighted sum, where the weights involve the local derivative ${\partial u_j}/{\partial z}$ that is often easy to compute. This brings us to the question of how we measure running time. For book-keeping, we assume that</p>
+
+<blockquote>
+  <p><strong>Basic assumption:</strong>  If $u$ is a node at level $t+1$ and $z$ is any node at level $\leq t$ whose output is an input to $u$, then computing $\frac{\partial u}{\partial z}$ takes unit time on our computer.</p>
+</blockquote>
+
+<h3 id="naive-feedforward-algorithm-not-efficient">Naive feedforward algorithm (not efficient!)</h3>
+<p>It is useful to first point out the naive quadratic time algorithm implied by the chain rule.   Most authors skip this trivial version, which we think is analogous to teaching sorting using only quicksort, and skipping over the less efficient bubblesort.</p>
+
+<p>The naive algorithm is to compute $\partial u_i/\partial u_j$ for every pair of nodes where $u_i$ is at a higher level than $u_j$. Of course, among these $V^2$ values (where $V$ is the number of nodes) are also  the desired  ${\partial f}/{\partial u_i}$ for all $i$  since $f$ is itself the value of the output node.</p>
+
+<p>This computation  can be done in feedforward fashion. If such value has been obtained for every $u_j$ on the level up to and including level $t$, then one can express (by inspecting the multivariate chain rule) the value $\partial u_{\ell}/\partial u_j$ for some $u_{\ell}$ at level $t+1$ as a weighted combination of values $\partial u_{i}/\partial u_j$ for each $u_i$ that is a direct input to $u_{\ell}$. This description shows that the amount of computation for a fixed $j$ is proportional to the number of edges $E$. This amount of work happens for all $V$ values of $j$, letting us conclude that the total work in the algorithm is $O(VE)$.</p>
+
+<h2 id="backpropagation-linear-time">Backpropagation (Linear Time)</h2>
+
+<p>The more efficient backpropagation, as the name suggests,  computes the partial derivatives in the reverse direction. Messages are passed in one wave backwards from higher number layers to lower number layers. (Some presentations of the algorithm describe it as dynamic programming.)</p>
+
+<blockquote>
+  <p><strong>Messaging protocol:</strong>
+The node $u$ receives a message along each outgoing edge from the node at the other end of that edge. It sums these messages to get a number $S$ (if $u$ is the output of the entire net, then define $S=1$) and then it sends the following message to any node $z$ adjacent to it at a lower level:
+<script type="math/tex">S \cdot \frac{\partial u}{\partial z}</script></p>
+</blockquote>
+
+<p>Clearly, the amount of work done by each node is proportional to its degree, and thus overall work is the sum of the node degrees. Summing all node degrees counts each edge twice, and thus the overall work is 
+$O(\text{Network Size})$.</p>
+
+<p>To prove correctness, we prove the following:</p>
+
+<blockquote>
+  <p><strong>Main Claim</strong>: At each node $z$, the value $S$ is exactly ${\partial f}/{\partial z}$.</p>
+</blockquote>
+
+<p><em>Base Case</em>: At the output layer this is true, since ${\partial f}/{\partial f} =1$.</p>
+
+<p><em>Inductive case</em>: Suppose the claim was true for layers $t+1$ and higher and $u$ is at layer $t$, with outgoing edges go to some nodes $u_1, u_2, \ldots, u_m$ at levels $t+1$ or higher. By inductive hypothesis, node $z$ indeed receives $ \frac{\partial f}{\partial u_j}\times \frac{\partial u_j}{\partial z}$ from each of $u_j$. Thus by Chain rule, 
+<script type="math/tex">S= \sum_{i =1}^m \frac{\partial f}{\partial u_i}\frac{\partial u_i}{\partial z}=\frac{\partial f}{\partial z}.</script>
+This completes the induction and proves the Main Claim.</p>
+
+<h2 id="auto-differentiation">Auto-differentiation</h2>
+<p>Since the exposition above used almost no details about the network and the operations that the node perform, it extends to every computation that can be organized as an acyclic graph whose each node computes a differentiable function of its incoming neighbors. This observation underlies many auto-differentiation packages such as <a href="https://github.com/HIPS/autograd">autograd</a> or <a href="https://www.tensorflow.org/">tensorflow</a>: they allow computing the gradient of the output of such a computation with respect to the network parameters.</p>
+
+<p>We first observe that Claim 1 continues to hold in this very general setting. This is without loss of generality because we can view the parameters associated to the edges as also sitting on the nodes (actually, leaf nodes). This can be done via a simple transformation to the network;  for a single node it is shown in the picture below; and one would need to continue to do this transformation in the rest of the networks feeding into $u_1, u_2,..$ etc from below.</p>
+
+<div style="text-align:center;">
+<img style="width:800px;" src="http://ai.stanford.edu/~tengyuma/forblog/change_view" />
+</div>
+
+<p>Then, we can use the messaging protocol to compute the derivatives with respect to the nodes, as long as the local partial derivative can be computed efficiently. We note that the algorithm can be implemented in a fairly modular manner: For every node $u$, it suffices to specify (a) how it depends on the incoming nodes, say, $z_1,\dots, z_n$  and (b) how to compute the partial derivative times $S$, that is, $S \cdot \frac{\partial u}{\partial z_j}$.</p>
+
+<p><em>Extension to vector messages</em>: In fact (b) can be done efficiently in more general settings where we allow the output of each node in the network to be a vector (or even matrix/tensor) instead of only a real number. Here we need to replace $\frac{\partial u}{\partial z_j}\cdot S$ by $\frac{\partial u}{\partial z_j}[S]$, which denotes the result of applying the operator $\frac{\partial u}{\partial z_j}$ on $S$. We note that to be consistent with the convention in the usual exposition of backpropagation, when $y\in \mathbb{R}^{p}$ is a funciton of $x\in \mathbb{R}^q$, we use $\frac{\partial y}{\partial x}$ to denote $q\times p$ dimensional matrix with $\partial y_j/\partial x_i$ as the $(i,j)$-th entry. Readers might notice that this is the transpose of the usual Jacobian matrix defined in mathematics. Thus $\frac{\partial y}{\partial x}$ is an operator that maps $\mathbb{R}^p$ to $\mathbb{R}^q$ and we can verify $S$ has the same dimension as $u$ and $\frac{\partial u}{\partial z_j}[S]$ has the same dimension as $z_j$.</p>
+
+<p>For example, as illustrated below, suppose the node $U\in \mathbb{R}^{d_1\times d_3} $ is a product of two matrices $W\in \mathbb{R}^{d_2\times d_3}$ and $Z\in \mathbb{R}^{d_1\times d_2}$. Then we have that $\partial U/\partial Z$ is a linear operator that maps $\mathbb{R}^{d_2\times d_3}$ to $\mathbb{R}^{d_1\times d_3}$, which naively requires a matrix representation of dimension $d_2d_3\times d_1d_3$. However, the computation (b) can be done efficiently because 
+<script type="math/tex">\frac{\partial U}{\partial Z}[S]= W^{\top}S.</script></p>
+
+<p>Such vector operations can also be implemented efficiently using today’s GPUs.</p>
+
+<div style="text-align:center;">
+<img style="width:200px;" src="http://ai.stanford.edu/~tengyuma/forblog/mult.jpg" />
+</div>
+
+<h2 id="notable-extensions">Notable Extensions</h2>
+
+<p>1) <em>Allowing weight tying.</em> In many neural architectures, the designer wants to force many network units such as edges or nodes to share the same parameter. For example, in <a href="https://en.wikipedia.org/wiki/Convolutional_neural_network"><em>convolutional neural nets</em></a>, the same filter has to be applied all over the image, which implies reusing the same parameter for a large set of edges between the two layers.</p>
+
+<p>For simplicity, suppose two parameters $a$ and $b$ are supposed to share the same value. This is equivalent to adding a new node $u$ and connecting $u$ to both $a$ and $b$ with the operation $a = u$ and $b=u$. Thus, by chain rule, <script type="math/tex">\frac{\partial f}{\partial u} = \frac{\partial f}{\partial a}\cdot \frac{\partial a}{\partial u}+\frac{\partial f}{\partial b}\cdot \frac{\partial b}{\partial u} =  \frac{\partial f}{\partial a}+ \frac{\partial f}{\partial b}.</script> Hence, equivalently, the gradient with respect to a shared parameter is the sum of the gradients with respect to individual occurrences.</p>
+
+<p>2) <em>Backpropagation on networks with loops.</em> The above exposition assumed the network is acyclic.   Many cutting-edge applications such as machine translation and language understanding use networks with directed loops (e.g., recurrent neural networks). These architectures —all examples of the “differentiable computing” paradigm below—can get complicated and may involve operations on a separate memory as well as mechanisms to shift attention to different parts of data and memory.</p>
+
+<p>Networks with loops are trained using gradient descent as well, using  <a href="https://en.wikipedia.org/wiki/Backpropagation_through_time">back-propagation through time</a>, which consists of expanding the network through a finite number of time steps into an acyclic graph, with replicated copies of the same
+network. These replicas share the weights  (weight tying!) so the gradient can be computed. In practice an issue may arise  with <a href="https://en.wikipedia.org/wiki/Vanishing_gradient_problem">exploding or vanishing gradients</a> which impact convergence. Such issues can be carefully addressed in practice by clipping the gradient or re-parameterization techniques such as  <a href="https://en.wikipedia.org/wiki/Long_short-term_memory">long short-term memory</a>.</p>
+
+<p>The fact that the gradient can be computed efficiently for such general networks with loops has motivated neural net models  with memory or even data structures (see for example <a href="https://en.wikipedia.org/wiki/Neural_Turing_machine">neural Turing machines</a> and <a href="https://en.wikipedia.org/wiki/Differentiable_neural_computer">differentiable neural computer</a>). Using gradient descent, one can optimize over a family of parameterized networks with loops to find the best one that solves a certain computational task (on the training examples).  The limits of these ideas are still being explored.</p>
+
+<p>3) <em>Hessian-vector product in linear time.</em> It is possible to generalize backprop to enable 2nd order optimization in “near-linear” time, not just gradient descent,
+as shown in recent independent manuscripts of <a href="https://arxiv.org/pdf/1611.00756.pdf">Carmon et al.</a> and <a href="https://arxiv.org/pdf/1611.01146.pdf">Agarwal et al.</a> (NB: Tengyu is a coauthor on this one.).  One essential step is to
+compute the product of the <a href="https://en.wikipedia.org/wiki/Hessian_matrix">Hessian matrix</a> and a  vector, for which <a href="http://www.bcl.hamilton.ie/~barak/papers/nc-hessian.pdf">Pearlmutter’93</a> gave an efficient algorithm.  Here we show how to do this in $O(\mbox{Network size})$ using the ideas above. We need a slightly stronger version of the back-propagation result than the one in the previous subsection:</p>
+
+<blockquote>
+  <p><strong>Claim (informal):</strong> Suppose an acyclic network with $V$ nodes and $E$ edges has output $f$ and leaves $z_1,\dots, z_m$. Then there exists a network of size $O(V+E)$ that has $z_1,\dots, z_m$ as input nodes and $\frac{\partial f}{\partial z_1},\dots, \frac{\partial f}{\partial z_m}$ as output nodes.</p>
+</blockquote>
+
+<p>The proof of the Claim follows in straightforward fashion from implementing the message passing protocol as an acyclic circuit.</p>
+
+<p>Next we show how to compute $\nabla^2 f(z)\cdot v$ where $v$ is a given fixed vector. Let $g(z)= \langle \nabla f(z),v\rangle$ be a function from $\mathbb{R}^d\rightarrow \mathbb{R}$. Then by the Claim above, $g(z)$ can be computed by a network of size $O(V+E)$. Now apply the Claim again on $g(z)$, we obtain that $\nabla g(z)$ can also be computed by a network of size $O(V+E)$.</p>
+
+<p>Note that by construction, 
+<script type="math/tex">\nabla g(z) =  \nabla^2 f(z)\cdot v.</script>
+Hence we have computed the Hessian vector product in network size time.</p>
+
+<p>##That’s all!</p>
+
+<p>Please write your comments on  this exposition and whether it can be improved.</p>
+
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/12/20/backprop/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Back-propagation, an introduction&url=http://localhost:4000/2016/12/20/backprop/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/12/20/backprop/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/12/20/backprop/&title=Back-propagation, an introduction" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/12/20/backprop/&title=Back-propagation, an introduction" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/12/20/backprop/&t=Back-propagation, an introduction" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/12/20/backprop';
+    var disqus_title      = 'Back-propagation, an introduction';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

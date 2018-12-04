@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Escaping from Saddle Points &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="What are saddle points and how to escape them in nonconvex optimization.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/03/22/saddlepoints/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Escaping from Saddle Points">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/03/22/saddlepoints/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Escaping from Saddle Points</h1>
+  <div class="post-meta">
+  
+  Rong Ge &nbsp;&bull;&nbsp;
+  
+  
+  Mar 22, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    13 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>Convex functions are simple — they usually have only one local minimum. Non-convex functions can be much more complicated. In this post we will discuss various types of <em>critical points</em> that you might encounter when you go <em>off the convex path</em>. In particular, we will see in many cases simple heuristics based on gradient descent can lead you to a <em>local minimum</em> in polynomial time.</p>
+
+<h2 id="various-types-of-critical-points">Various Types of Critical Points</h2>
+
+<p><img src="/assets/saddle/minmaxsaddle.png" alt="Local Minimum, Local Maximum and Saddle Point" /></p>
+
+<p>To minimize the function $f:\mathbb{R}^n\to \mathbb{R}$, the most popular approach is to follow the opposite direction of the gradient $\nabla f(x)$ (for simplicity, all functions we talk about are infinitely differentiable), that is,</p>
+
+<script type="math/tex; mode=display">y = x - \eta \nabla f(x),</script>
+
+<p>Here $\eta$ is a small step size. This is the <em>gradient descent</em> algorithm.</p>
+
+<p>Whenever the gradient $\nabla f(x)$ is nonzero, as long as we choose a small enough $\eta$, the algorithm is guaranteed to make <em>local</em> progress. When the gradient $\nabla f(x)$ is equal to $\vec{0}$, the point is called a <strong>critical point</strong>, and gradient descent algorithm will get stuck. For (strongly) convex functions, there is a unique <em>critical point</em> that is also the <em>global minimum</em>.</p>
+
+<p>However, for non-convex functions, just having the gradient to be $\vec{0}$ is not good enough. A simple example is the function</p>
+
+<script type="math/tex; mode=display">y = x_1^2 - x_2^2.</script>
+
+<p>At $x = (0,0)$, the gradient is $\vec{0}$, but it is clearly not a local minimum as $x = (0, \epsilon)$ has smaller function value. The point $(0,0)$ is called a <em>saddle point</em> of this function.</p>
+
+<p>To distinguish these cases we need to consider the second order derivative $\nabla^2 f(x)$ — an $n\times n$ matrix (usually known as the <em>Hessian</em>) whose $i,j$-th entry is equal to $\frac{\partial^2}{\partial x_i \partial x_j} f(x)$. When the Hessian is positive definite (which means $u^\top\nabla^2 f(x) u &gt; 0$ for any $u\ne 0$), by second order Taylor’s expansion for any direction $u$
+<script type="math/tex">f(x + \eta u) \approx f(x) + \frac{\eta^2}{2} u^\top\nabla^2 f(x) u > f(x),</script>
+therefore $x$ must be a local minimum. Similarly, when the Hessian is negative definite, the point is a local maximum; when the Hessian has both positive and negative eigenvalues, the point is a <em>saddle point</em>.</p>
+
+<p>It is believed that for many problems including <a href="http://arxiv.org/abs/1412.0233">learning deep nets</a>, almost all local minimum have very similar function value to the global optimum, and hence  finding a local minimum is good enough. However, it is NP-hard to even find a local minimum (see Discussions in <a href="http://arxiv.org/abs/1602.05908">Anandkumar, Ge 2006</a>). Many popular optimization techniques in practice are <em>first order</em> optimization algorithms: they only look at the gradient information, and never explicitly compute the Hessian. Such algorithms may get <em>stuck</em> at saddle points.</p>
+
+<p>In the rest of the post, we will first see that getting stuck at saddle points is a very realistic possibility since most natural objective functions have <em>exponentially</em> many saddle points. We will then discuss how optimization algorithms can try to escape from saddle points.</p>
+
+<h2 id="symmetry-and-saddle-points">Symmetry and Saddle Points</h2>
+
+<p>Many learning problems can be abstracted as searching for $k$ distinct <em>components</em> (sometimes called <em>features</em>, <em>centers</em>,…). For example, in the <a href="https://en.wikipedia.org/wiki/Cluster_analysis">clustering</a> problem, there are $n$ points, and we are searching for $k$ components that minimizes the sum of distances of points to their nearest center. In a two-layer <a href="https://en.wikipedia.org/wiki/Artificial_neural_network">neural network</a>, we try to find a network with $k$ distinct  <em>neurons</em> at the middle layer. In my <a href="http://www.offconvex.org/2015/12/17/tensor-decompositions/">previous post</a> I talked about <em>tensor decomposition</em>, which also looks for $k$ distinct <em>rank-1 components</em>.</p>
+
+<p>A popular way to solve these problems is to design an objective function: let $x_1, x_2, \ldots, x_k \in \mathbb{R}^n$ denote the desired centers and let objective function $f(x_1,…,x_k)$ measure the quality of the solution. The function is minimized when the vectors $x_1,x_2,…,x_k$ are the $k$ components that we are looking for.</p>
+
+<p>A natural reason why any such problem is inherently non-convex is <em>permutation symmetry</em>. For instance, if we swap the order of first and second component, the solutions are equivalent. Namely, 
+<script type="math/tex">f(x_1,x_2,...,x_k) = f(x_2, x_1,...,x_k).</script></p>
+
+<p>However, if we take the average of this solution, we will end up with the solution $\frac{x_1+x_2}{2}, \frac{x_1+x_2}{2}, x_3,…,x_k$, which is <em>not equivalent</em>! If the original solution is optimal this average is likely to be suboptimal. Therefore the objective function cannot be convex because for convex functions, average of optimal solutions is still optimal.</p>
+
+<p><img src="/assets/saddle/equivalent.png" alt="Symmetry" /></p>
+
+<p>There are <em>exponentially</em> many globally optimal solutions that are all permutations of the same solution. Saddle points arise naturally on the paths that connect these <em>isolated</em> local minima. The figure below shows the function $y = x_1^4-2x_1^2 + x_2^2$: between two symmetric local min $(-1,0)$ and $(1,0)$, the point $(0,0)$ is a saddle point.</p>
+
+<p style="text-align:center;">
+<img src="/assets/saddle/symmetrysmall.png" alt="Symmetry and Saddle Points" />
+</p>
+
+<h2 id="escaping-from-saddle-points">Escaping from Saddle Points</h2>
+
+<p>In order to optimize these non-convex functions with many saddle points, optimization algorithms need to make progress even at (or near) saddle points. The simplest way to do this is by using the second order Taylor’s expansion:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+f(y) \approx f(x) + \left<\nabla f(x), y-x\right>+\frac{1}{2} (y-x)^\top \nabla^2 f(x) (y-x). %]]></script>
+
+<p>If the gradient $\nabla f(x)$ is $\vec{0}$, we can still hope to find a vector $u$ where $u^\top \nabla^2 f(x) u &lt; 0$. This way if we let $y = x+\eta u$, the function value of $f(y)$ is likely to be smaller. Many optimization algorithms such as <a href="http://link.springer.com/article/10.1007%2Fs10107-015-0893-2">trust region algorithms</a> and <a href="http://link.springer.com/article/10.1007%2Fs10107-006-0706-8">cubic regularization</a> use this idea, and they can escape from saddle points in polynomial time for nice functions.</p>
+
+<h3 id="strict-saddle-functions">Strict Saddle Functions</h3>
+
+<p>As we discussed, in general it is NP-hard to find a local minimum and many algorithms may get stuck at a saddle point. How many steps do we need to escape from a saddle point? This is related to how <em>well-behaved</em> the saddle points are. Intuitively, a saddle point $x$ is well-behaved, if there is a direction $u$ such that the second order term $u^\top \nabla^2 f(x) u$ is significantly smaller than 0 — geometrically this means there is a steep direction where the function value decreases. To quantify this, <a href="http://arxiv.org/abs/1503.02101">my paper with Furong Huang, Chi Jin and Yang Yuan</a> introduced the notion of <em>strict saddle</em> functions (also known as “ridable” function in <a href="http://arxiv.org/abs/1510.06096">Sun et al. 2015</a>)</p>
+
+<blockquote>
+  <p>A function $f(x)$ is <em>strict saddle</em> if all points $x$ satisfy at least one of the following<br /></p>
+  <ol>
+    <li>Gradient $\nabla f(x)$ is large. <br /></li>
+    <li>Hessian $\nabla^2 f(x)$ has a negative eigenvalue that is bounded away from 0.<br /></li>
+    <li>Point $x$ is near a local minimum.</li>
+  </ol>
+</blockquote>
+
+<p>Essentially, the local region of every point $x$ looks like one of the following pictures:</p>
+
+<p><img src="/assets/saddle/strictsaddle.png" alt="Symmetry" /></p>
+
+<p>For such functions, <a href="http://link.springer.com/article/10.1007%2Fs10107-015-0893-2">trust region algorithms</a> and <a href="http://link.springer.com/article/10.1007%2Fs10107-006-0706-8">cubic regularization</a> can find a local minimum efficiently.</p>
+
+<blockquote>
+  <p><strong>Theorem(Informal)</strong> There are polynomial time algorithms that can find a local minimum of strict saddle functions.</p>
+</blockquote>
+
+<p>What functions are strict saddle? <a href="http://arxiv.org/abs/1503.02101">Ge et al. 2015</a> showed a <a href="http://www.offconvex.org/2015/12/17/tensor-decompositions/">tensor decomposition</a> problem is strict saddle. <a href="http://arxiv.org/abs/1510.06096">Sun et al. 2015</a> observed that problems like complete <a href="https://en.wikipedia.org/wiki/Machine_learning#Sparse_dictionary_learning">dictionary learning</a>, <a href="https://en.wikipedia.org/wiki/Phase_retrieval">phase retrieval</a> are also strict saddle.</p>
+
+<h3 id="first-order-method-to-escape-from-saddle-points">First Order Method to Escape from Saddle Points</h3>
+
+<p>Trust region algorithms are very powerful. However they need to compute the second order derivative of the objective function, which is often too expensive in practice. If the algorithm can only access the gradient of the function, is it still possible to escape from saddle points?</p>
+
+<p>This might seem hard as the gradient at a saddle point is $\vec{0}$ and does not give us any information. However, the key observation here is saddle points are very <em>unstable</em>: if we put a ball on a saddle point, then slightly perturb it, the ball is likely to fall! Of course we need to make this intuition formal in higher dimensions, as naively to find the direction to fall it seems to require computing the smallest eigenvector of the Hessian matrix.</p>
+
+<p>To formalize this intuition we will try use a <em>noisy gradient descent</em></p>
+
+<blockquote>
+  <p>$y = x - \eta \nabla f(x) + \epsilon.$</p>
+</blockquote>
+
+<p>Here $\epsilon$ is a noise vector that has mean $0$. This additional noise is going to deliver the initial <em>nudge</em> that makes the ball fall along the slope.</p>
+
+<p>In fact, often it is much cheaper to compute a noisy gradient than the true gradient — this is the key idea in <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient</a> , and a large body of work shows that the noise does not interfere with convergence for convex optimization. For non-convex optimization, intuitively people believed the inherent noise <em>helps</em> in convergence because it pushes the current point away from <em>saddle points</em>. It’s not a bug, it’s a feature!</p>
+
+<p style="text-align:center;">
+<img src="/assets/saddle/escapesmall.png" alt="Escaping from saddle points" />
+</p>
+
+<p>Previously, there were no good upper bound known  on the number of iterations  needed to escape saddle points and arrive at a local minimum. In <a href="http://arxiv.org/abs/1503.02101">Ge et al. 2015</a>, we show</p>
+
+<blockquote>
+  <p><strong>Theorem(Informal)</strong> Noisy gradient descent can find a local minimum of strict saddle functions in polynomial time.</p>
+</blockquote>
+
+<p>The polynomial dependency on the dimension $n$ and the smallest eigenvalue of the Hessian are fairly high and not very practical. It is an open problem to find the optimal convergence rate for strict saddle problems.</p>
+
+<p>A recent subsequent paper by <a href="http://arxiv.org/abs/1602.04915">Lee et al.</a> showed even without adding noise, gradient descent will not converge to any strict saddle point if the initial point is chosen randomly. However their result relies on the <a href="https://en.wikipedia.org/wiki/Stable_manifold_theorem">Stable Manifold Theorem</a> from dynamical systems theory, which inherently does not provide any upperbound on the number of steps.</p>
+
+<h2 id="beyond-simple-saddle-points">Beyond Simple Saddle Points</h2>
+
+<p>We have seen algorithms that can handle (simple) saddle points. However, non-convex problems can have much more complicated landscapes that involve <em>degenerate</em> saddle points — points whose Hessian is positive semidefinite and have 0 eigenvalues. Such degenerate structure often indicates a complicated saddle point (such as a <a href="https://en.wikipedia.org/wiki/Monkey_saddle">monkey saddle</a>, Figure (a)) or a set of connected saddle points (Figures (b)(c)). In <a href="http://arxiv.org/abs/1602.05908">Anandkumar, Ge 2016</a> we gave an algorithm that can deal with some of these <em>degenerate</em> saddle points.</p>
+
+<p><img src="/assets/saddle/highorder.png" alt="Higher order saddle points" /></p>
+
+<p>The landscapes of non-convex functions can be very complicated, and there are still many open problems. What other functions are <em>strict saddle</em>? How do we make optimization algorithms that work even when there are degenerate saddle points or even <em>spurious</em> local minima? We hope more researchers will be interested in these problems!</p>
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/03/22/saddlepoints/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Escaping from Saddle Points&url=http://localhost:4000/2016/03/22/saddlepoints/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/03/22/saddlepoints/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/03/22/saddlepoints/&title=Escaping from Saddle Points" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/03/22/saddlepoints/&title=Escaping from Saddle Points" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/03/22/saddlepoints/&t=Escaping from Saddle Points" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/03/22/saddlepoints';
+    var disqus_title      = 'Escaping from Saddle Points';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Generative Adversarial Networks (GANs), Some Open Questions &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Algorithms off the convex path.">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2017/03/15/GANs/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Generative Adversarial Networks (GANs), Some Open Questions">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2017/03/15/GANs/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>Generative Adversarial Networks (GANs), Some Open Questions</h1>
+  <div class="post-meta">
+  
+  Sanjeev Arora &nbsp;&bull;&nbsp;
+  
+  
+  Mar 15, 2017 &nbsp;&bull;&nbsp;
+  
+  
+  
+    14 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>Since ability to generate “realistic-looking” data may be a step towards understanding its structure and exploiting it, generative models are an important component of unsupervised learning, which has been a frequent theme on this blog.  Today’s post is about Generative Adversarial Networks (GANs), introduced in 2014 by <a href="https://arxiv.org/abs/1406.2661">Goodfellow et al.</a>, which have quickly become very popular way to train generative models for complicated real-life data. It involves a game-theoretic tussle between a generator player and a discriminator player, which is very attractive and may be useful in other settings.</p>
+
+<p>This post describes GANs and raises some open questions about them. The next post will describe <a href="https://arxiv.org/abs/1703.00573">our recent paper</a> addressing these questions.</p>
+
+<p>A generative model $G$ can be seen as taking a random seed $h$ (say, a sample from a multivariate Normal distribution) and converting it into an output string $G(h)$ that “looks” like a real datapoint. Such models are popular in classical statistics but the simpler ones like Gaussian Mixtures or Dirichlet Processes  seem insufficient for modeling complicated distributions on natural images or natural language. Generative models are also popular in statistical physics, e.g., Ising models and their cousins. These physics models migrated into machine learning and neuroscience in the 1980s and 1990s, which led to a new generative  view of neural nets  (e.g., Hinton’s <a href="https://en.wikipedia.org/wiki/Restricted_Boltzmann_machine">Restricted Boltzmann Machines</a>) which in turn led to multilayer generative models such as stacked denoising autoencoders and variational autoencoders. At their heart, these are nothing but multilayer neural nets that transform the random seed into an output that looks like a realistic image. The primary differences in the model concern details of training. Here is the obligatory set of generated images (source:  <a href="https://openai.com/blog/generative-models/">OpenAI blog</a>)</p>
+
+<div style="text-align:center;">
+<img style="height=350px" src="https://openai.com/assets/research/generative-models/gans-2-6345b04cb02f720a95ea4cb9483e2fd5a5f6e46ec6ea5bbefadf002a010cda82.jpg" />
+</div>
+
+<h2 id="gans-the-basic-framework">GANs: The basic framework</h2>
+
+<p>GANs also train a deep net $G$  to produce realistic images, but the new and beautiful twist  lies in a novel training procedure.</p>
+
+<p>To understand the new twist let’s first discuss what it could mean for the output to “look” realistic. A classic evaluation for generative models is <a href="https://en.wikipedia.org/wiki/Perplexity"><em>perplexity</em></a>: a measure of the amount of probability it gives to actual images. This requires that the generative model must be accompanied by an algorithm that computes the probability density function for the generated distribution (i.e., given any image, it must output an estimate of the probability that the model outputs this image.) I might do a future blog post discussing pros and cons of the perplexity measure, but today let’s instead dive straight to GANs, which sidestep the need for perplexity computations.</p>
+
+<blockquote>
+  <p><strong>Idea 1:</strong> Since deep nets are good at recognizing images —e.g., distinguishing pictures of people from pictures of cats—why not let a deep net be the judge of  the outputs of a generative model?</p>
+</blockquote>
+
+<p>More concretely, let $P_{real}$ be the distribution over real images, and $P_{synth}$ the one output by the model (i.e., the distribution of $G(h)$ when $h$ is a random seed). We could try to train a discriminator deep net $D$ that maps images to numbers in $[0,1]$ and tries to discriminate between these distributions in the following sense. Its
+expected output $E_{x}[D(x)]$ as high as possible when $x$ is drawn from $P_{real}$ and 
+ as low as possible when $x$ is drawn from $P_{synth}$.  This training can be done with the <a href="http://www.offconvex.org/2016/12/20/backprop/">usual backpropagation</a>.  If the two distributions are identical then of course no such deep net can exist, and so the training will end in failure. If on the other hand we are able to train a good discriminator deep net —one whose average output is noticeably different between real and synthetic samples— then this is proof positive that the two distributions are different. (There is an in-between case, whereby the distributions are different but the discriminator net doesn’t detect a difference. This is going to be important in the story in the next post.) A natural next question is whether the ability to train such a discriminator deep net can help us improve the generative model.</p>
+
+<blockquote>
+  <p><strong>Idea 2:</strong> If a good discriminator net has been trained, use it to provide “gradient feedback” that improves the generative model.</p>
+</blockquote>
+
+<p>Let $G$ denote the Generator net, which means that samples in $P_{synth}$ are obtained by sampling a uniform gaussian seed $h$ and computing $G(h)$. The natural goal for the generator is to make $E_{h}[D(G(h))]$ as high as possible, because that means it is doing better at fooling the discriminator $D$. So if we fix $D$ the natural way to improve $G$ is to pick a few random seeds $h$, and slightly adjust the trainable parameters of $G$ to increase this objective. Note that this gradient computation involves backpropagation through  the composed net $D(G(\cdot))$).</p>
+
+<p>Of course, if we let the generator improve itself, it also makes sense to then let the discriminator improve itself too, Which leads to:</p>
+
+<blockquote>
+  <p><strong>Idea 3:</strong>  Turn the training of the generative model into a game of many moves or alternations.</p>
+</blockquote>
+
+<p>Each move for the discriminator consists of taking a few samples from $P_{real}$  and $P_{synth}$  and improving its ability to discriminate between them. Each move for the generator consists of producing a few samples from $P_{synth}$ and updating its parameters so that $E_{u}[D(G(h))]$ goes up a bit.</p>
+
+<p>Notice, the discriminator always uses the generator as a black box —i.e., never examines its internal parameters —whereas the generator needs the discriminator’s parameters to compute its gradient direction. Also, the generator does not ever use real images from $P_{real}$   for its computation. (Though of course it does rely on the real images indirectly since the discriminator is trained using them.)</p>
+
+<h2 id="gans-more-details">GANS: More details</h2>
+
+<p>One can fill in the above framework in multiple ways. The most obvious is that the generator could try to maximize $E_{u}[f(D(G(h)))]$ where $f$ is some increasing function. (We call this the <em>measuring function.</em>) This has the effect of giving different importance to different samples.   Goodfellow et al. originally   used $f(x)=\log (x)$, which, since the derivative of $\log x$ is $1/x$,  implicitly gives much more importance to synthetic data $G(u)$ where the discriminator outputs very low values $D(G(h))$. In other words, using $f(x) =\log x$ makes the training more sensitive to instances which the discriminator finds terrible than to instances which the discriminator finds so-so. By contrast, the above sketch implicitly used $f(x) =x$, which gives the same importance to all samples and appears in the recent  <a href="https://arxiv.org/abs/1701.07875">Wasserstein GAN</a>.</p>
+
+<p>The discussion thus leads to the following mathematical formulation, where $D, G$ are deep nets with specified architecture and whose number of parameters is fixed in advance by the algorithm designer.</p>
+
+<script type="math/tex; mode=display">\min_{G} \max_{D}~~E_{x\sim P_{real}}[f(D(x))] + E_{h}[f(1-D(G(h)))]. \qquad (1)</script>
+
+<p>There is now a big industry of improving this basic framework using various architectures and training variations, e.g. (a random sample; possibly missing some important ones): <a href="https://arxiv.org/abs/1511.06434v2">DC-GAN</a>, <a href="https://arxiv.org/abs/1612.04357">S-GAN</a>, <a href="https://arxiv.org/abs/1609.04802">SR-GAN</a>, <a href="https://arxiv.org/abs/1606.03657">INFO-GAN</a>, etc.</p>
+
+<p>Usually, the  training is continued until the generator wins, meaning the discriminator’s expected output on samples from $P_{real}$  and $P_{synth}$ becomes the same. But a serious  practical difficulty is that training in practice is oscillatory, and the above objective  is observed to go up and down. This is unlike usual deep net training, where training (at least in cases where it works) steadily improves the objective.</p>
+
+<h2 id="gans-some-open-questions">GANS: Some open questions</h2>
+
+<p>(a)	<em>Does an equilibrium exist?</em></p>
+
+<p>Since GAN is a 2-person game, the oscillatory behavior mentioned above is not unexpected. Just as a necessary condition for gradient descent to come to a stop is that the current point is a stationary point (ie gradient is zero), the corresponding situation in  a 2-person game is an <em>equilibrium</em>: each player’s move happens to be its optimal response to the other’s move. In other words, switching the order of $\min$ and $\max$ in expression (1) doesn’t change the objective. The GAN formulation above needs a so-called pure equilibrium, which may not exist in general. A simple example is the classic rock/paper/scissors game. Regardless of whether one player plays rock, paper or scissor as a move, the other can counter with a move that beats it. Thus no pure equilibrium exists.</p>
+
+<p>(b) <em>Does an equilibrium exist where the generator wins, i.e. discriminator ends up unable to distinguish the two distributions on finite samples?</em></p>
+
+<p>(c) <em>Suppose the generator wins. What does this say about whether or not</em> $P_{real}$  <em>is close to</em> $P_{synth}$ ?</p>
+
+<p>Question (c) has dogged GANs research from the start. Has the generative model actually learned something meaningful about real life images, or is it somehow memorizing existing images and presenting trivial modifications?  (Recall that $G$ is never exposed directly to real images, so any “memorizing” has to be happen via the gradient propagated through the discriminator.)</p>
+
+<p>If generator’s win does indeed say that $P_{real}$  and $P_{synth}$  are close then we think of the GANs training as <em>generalizing.</em> (This by analogy to the usual notion of generalization for supervised learning.)</p>
+
+<p>In fact,  the next post will show that this issue is indeed more subtle than hitherto recognized. But to complete the backstory I will summarize how this issue has been studied so far.</p>
+
+<h2 id="past-efforts-at-understanding-generalization">Past efforts at understanding generalization</h2>
+
+<p>The original paper of Goodfellow et al. introduced an analysis of generalization —adopted since by other researchers— that works  when deep nets are trained “sufficiently high capacity, samples and training time” (to use their phrasing).</p>
+
+<p>For the original objective function with $f(x) =\log x$ if the optimal discriminator is allowed  to be any function all (i.e., not just one computable by a finite capacity neural net) it can be checked that the optimal choice is $D(x) = P_{real}(x)/(P_{real}(x)+P_{synth}(x))$.
+Substituting this in the GANs objective, up to linear transformation the maximum value achieved by discriminator turns out to be
+equivalent to the <a href="https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence">Jensen-Shannon (JS) divergence</a> between $P_{real}$ and $P_{synth}$. 
+Hence if a generator wins the game against this <em>ideal</em> discriminator on a <em>very large</em> number of samples, then $P_{real}$ and $P_{synth}$ are close in JS divergence, and thus the model has learnt the true distribution.</p>
+
+<p>A similar analysis for <a href="https://arxiv.org/abs/1701.07875">Wasserstein GANs</a> shows that if the generator  wins using the Wasserstein objective (i.e., $f(x) =x$) then the two distributions are close in <a href="https://en.wikipedia.org/wiki/Wasserstein_metric">Wasserstein or earth-mover distance</a>.</p>
+
+<p>But we will see in the next post that these analyses can be misleading because in practice, deep nets have (very) finite capacity and 
+sample size. Thus even if training produces the optimal discriminator, the above analyses can be very off.</p>
+
+<h2 id="further-resources">Further resources</h2>
+
+<p>OpenAI has a <a href="https://openai.com/blog/generative-models/">brief survey of recent approaches</a> to generative models. The <a href="http://www.inference.vc/">inFERENCe blog</a> has many articles on GANs.</p>
+
+<p><a href="https://arxiv.org/pdf/1701.00160.pdf">Goodfellow’s survey</a> is the most authoritative account of this burgeoning field, and gives tons of  insight. The text around Figure 22 discusses oscillation and lack of equilibria.
+He also discusses how GANs trained on a broad spectrum of images seem to get confused and output  images that are realistic at the micro level but  nonsensical overall; e.g., an animal with a leg coming out of its head. Clearly this field, despite its promise,  has many open questions!</p>
+
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2017/03/15/GANs/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=Generative Adversarial Networks (GANs), Some Open Questions&url=http://localhost:4000/2017/03/15/GANs/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2017/03/15/GANs/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2017/03/15/GANs/&title=Generative Adversarial Networks (GANs), Some Open Questions" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2017/03/15/GANs/&title=Generative Adversarial Networks (GANs), Some Open Questions" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2017/03/15/GANs/&t=Generative Adversarial Networks (GANs), Some Open Questions" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2017/03/15/GANs';
+    var disqus_title      = 'Generative Adversarial Networks (GANs), Some Open Questions';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>

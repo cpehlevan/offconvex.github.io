@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>A Framework for analysing Non-Convex Optimization &#8211; Off the convex path</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Sufficient Conditions for Fast Convergence to Global Minimum">
+    <meta name="author" content="Moritz Hardt">
+    <meta name="keywords" content="">
+    <link rel="canonical" href="http://localhost:4000/2016/05/08/almostconvexitySATM/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Off the convex path" href="/feed.xml" />
+    <link rel="stylesheet" href="/css/pixyll.css?201812041448" type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'>
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="A Framework for analysing Non-Convex Optimization">
+    <meta property="og:description" content="Algorithms off the convex path.">
+    <meta property="og:url" content="http://localhost:4000/2016/05/08/almostconvexitySATM/">
+    <meta property="og:site_name" content="Off the convex path">
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\[","\]"], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        messageStyle: "none",
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js">
+    </script>
+
+</head>
+
+<body class="site">
+
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://localhost:4000" class="site-title">
+      <img style="width:500px;" src="/assets/logo.jpg" />
+      </a>
+      <nav class="site-nav" style="padding-top:200px;">
+        <a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+<a href="/subscribe/">Subscribe</a>
+
+      </nav>
+      <div class="clearfix"></div>
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>A Framework for analysing Non-Convex Optimization</h1>
+  <div class="post-meta">
+  
+  Sanjeev Arora, Tengyu Ma &nbsp;&bull;&nbsp;
+  
+  
+  May 8, 2016 &nbsp;&bull;&nbsp;
+  
+  
+  
+    12 minute read
+  
+  </div>
+</div>
+
+<article class="post-content">
+  <p>Previously <a href="http://www.offconvex.org/2016/03/22/saddlepoints/">Rong’s post</a> and <a href="http://www.offconvex.org/2016/03/24/saddles-again/">Ben’s post</a> show that (noisy) gradient descent can converge to <em>local</em> minimum of a non-convex function, and in (large) polynomial time (<a href="http://arxiv.org/abs/1503.02101">Ge et al.’15</a>). This post 
+describes a simple framework that can sometimes be used to design/analyse algorithms that can quickly reach an approximate <em>global</em> optimum of the nonconvex function. The framework —which was used to analyse alternating minimization algorithms for sparse coding  in <a href="http://arxiv.org/abs/1503.00778">our COLT’15 paper with Ge and Moitra</a>—generalizes many other sufficient conditions for convergence (usually gradient-based) that were formulated in recent papers.</p>
+
+<h2 id="measuring-progress-a-simple-lyapunov-function">Measuring progress: a simple Lyapunov function</h2>
+
+<p>Let $f$ be the function being optimized and suppose the algorithm produces a sequence of candidate solutions $z_1,\dots,z_k,\dots,$ via some update rule
+<script type="math/tex">z_{k+1} = z_k - \eta g_k.</script></p>
+
+<p>This can be seen as a dynamical system (see <a href="http://www.offconvex.org/2016/04/04/markov-chains-dynamical-systems/">Nisheeth’s</a> and <a href="http://www.offconvex.org/2016/03/24/saddles-again/">Ben’s</a> posts related to dynamical systems).
+Our goal is to show that this sequence converges to (or gets close to) a target point $z^* $, which is  a global optimum of $f$. Of course, the algorithm doesn’t know $z^*$.</p>
+
+<p>To design a framework for proving convergence it helps to indulge in daydreaming/wishful thinking: what property would we <em>like</em> the updates to have, to simplify our job?</p>
+
+<p>A natural idea is to define a Lyapunov function $V(z)$ and show that: (i) $V(z_k)$ decreases to $0$ (at a certain speed) as $k\rightarrow \infty$; (ii) when $V(z)$ is close to $0$, then $z$ is close to $z^* $. (Aside: One can imagine more complicated ways of proving convergence, e.g., show $V(z_k)$ ultimately goes to $0$ even though it doesn’t decrease in every step. Nesterov’s acceleration method uses such a progress measure.)</p>
+
+<p>Consider possibly the most trivial Lyapunov function, the (squared) distance to the target point,  $V(z) = |z-z^*|^2$. This is also used in the standard convergence proof for convex functions, since moving in the opposite direction to the gradient can be shown to reduce this measure $V()$.</p>
+
+<p>Even when the function is nonconvex, there always <em>exist</em> update directions that reduce this $V()$ (though finding them may not be easy).  Simple algebraic manipulation shows that when the learning rate $\eta$ is small enough, then for $V(z_{k+1}) \le V(z_k)$, it is necessary and sufficient to have $\langle g_k, z_k-z^* \rangle \ge 0$.</p>
+
+<p><img src="http://www.cs.princeton.edu/~tengyu/angle_for_blog_post.png" alt="correlation condition" style="float:left" height="240.8" width="260" /> As illustrated in the figure on the left, $z^* - z_k$ is the ideal direction that we desire to move to, and $-g_k$ is the direction that we actually move to. To establish convergence, it suffices to verify that the direction of movement is positively correlated with the desired direction.</p>
+
+<p>To get quantitative bounds on running time, we need to ensure that $V(z_k)$ not only decreases, but does so rapidly. The next condition formalizes this: intuitively speaking it says that $-g_k$ and $z^*-z_k$ make an angle strictly less than 90 degrees.</p>
+
+<blockquote>
+  <p><strong>Correlation Condition</strong>: The direction $g_k$ is $(\alpha,\beta,\epsilon_k)$-correlated with $ z^* $  if 
+<script type="math/tex">\langle g_k,z_k-z^* \rangle \ge \alpha \|z_k-z^*\|^2 + \beta \|g_k\|^2 -\epsilon_k</script></p>
+</blockquote>
+
+<p>This may look familiar to experts in convex optimization: as a special case if we make the update direction $g_k$ stand for the (negative) gradient, then the condition yields familiar notions such as strong convexity and smoothness. But the condition allows $g_k$ to not be the gradient, and in addition, allows  the error term $\epsilon_k$, which is necessary in some applications to accommodate non-convexity and/or statistical error.</p>
+
+<p>If the algorithm can at each step find such update directions, then the familiar convergence proof of convex optimization can be modified to show rapid convergence here as well, except the convergence is <em>approximate</em>, to some point in the neighborhood of $z^*$.</p>
+
+<blockquote>
+  <p><strong>Theorem:</strong> Suppose $g_k$ satisfies the Correlation Condition above for every $k$, then with learning rate $\eta \le 2\beta$, we have 
+<script type="math/tex">\| z_k-z^* \|^2 \le (1-\alpha\eta)^k\| z_0-z^* \|^2 + \max_k \epsilon_k/\alpha</script></p>
+</blockquote>
+
+<h3 id="comparison-with-related-conditions">Comparison with related conditions</h3>
+
+<p>As mentioned, the “wishful thinking” approach has been used to identify other 
+conditions under which specific nonconvex optimizations can be carried out to near-optimality: (<a href="https://arxiv.org/abs/1212.0467">JNS’13</a>, <a href="http://arxiv.org/abs/1312.0925">Hardt’14</a>, <a href="http://arxiv.org/abs/1408.2156">BWY’14</a>, <a href="http://arxiv.org/abs/1407.1065">CLS’15</a>, <a href="http://arxiv.org/abs/1503.00778">AGMM’15</a>, <a href="http://arxiv.org/abs/1411.8003">SL’15</a>, <a href="http://arxiv.org/abs/1505.05114">CC’15</a>, <a href="https://papers.nips.cc/paper/5733-a-nonconvex-optimization-framework-for-low-rank-matrix-estimation">ZWL’15</a>). All of these can be seen as some weakening of convexity (with the exception of the analysis for matrix completion in <a href="http://arxiv.org/abs/1312.0925">Hardt’14</a> which views the updates as noisy power method).</p>
+
+<p>Our condition appears to contain most if not all of these as special cases.</p>
+
+<p>Often the update direction $g_k$ in these papers is related to the gradient. For example using the gradient instead of 
+$g_k$ in our correlation condition turns it into the “regularity condition” proposed by <a href="http://arxiv.org/abs/1407.1065">CLS’15</a> for analyzing Wirtinger flow algorithm for phase retrieval. 
+The gradient stability condition in <a href="http://arxiv.org/abs/1408.2156">BWY’14</a> is also a special case, where $g_k$ is required to be close enough to $\nabla h(z_k)$ for some convex $h$ such that $z^* $ is the optimum of $h$. Then since $\nabla h(z_k)$ has angle &lt; 90 degrees with $z_k-z^*$ (which follows from convexity of $h$), it implies that $g_k$ also does.</p>
+
+<p>The advantage of our framework is that it encourages one to think of algorithms where $g_k$ is not the gradient.  Thus applying the framework doesn’t require understanding the behavior of the gradient on the entire landscape of the objective function; instead, one needs to understand the update direction (which is  under the algorithm designer’s control) at the 
+sequence of points actually encountered while running the algorithm.</p>
+
+<p>This slight change of perspective may be powerful.</p>
+
+<h2 id="application-to-sparse-coding">Application to Sparse Coding</h2>
+
+<p>A particularly useful situation for applying the framework above is where the objective function has two sets of arguments and it is feasible to optimize one set after fixing the other –leading to the familiar alternating minimization heuristic. Such algorithms are a good example of how one may try to do local-improvement without explicitly following the (full) gradient. 
+As mentioned, our framework was used to analyse
+such alternating minimization for <a href="https://en.wikipedia.org/wiki/Neural_coding#Sparse_coding">sparse coding</a>.</p>
+
+<p>In sparse coding, we are given a set of examples $Y = [y_1,\dots, y_N]\in \mathbb{R}^{d\times N}$, and are asked to find an over-complete basis $A = [a_1,\dots,a_m]$  (where “overcomplete” refers to the setting
+$m &gt; d$) so that each example $y_j$ can be expressed as a sparse linear combination of $a_i$’s. Therefore, the natural optimization problem with squared loss is that</p>
+
+<script type="math/tex; mode=display">f(A,X) = \min_{A, \textrm{sparse } X} \|Y-AX\|^2</script>
+
+<p>Here both the objective and the constraint set are not convex. 
+One could consider using $\ell_1$ regularization as a surrogate for sparsity, but the trouble will be that the regularization is neither smooth or strongly convex, and the standard techniques for dealing with $\ell_1$ penalty term in convex optimization cannot be easily applied due to  non-convexity.</p>
+
+<p>The standard alternating minimization  algorithm (a close variant of the one proposed by <a href="http://redwood.psych.cornell.edu/papers/olshausen_field_1997.pdf">Olshausen and Field 1997</a> as a neurally plausible explanation for V1, the human primary visual cortex) is as follows:</p>
+
+<script type="math/tex; mode=display">X_{k+1} \longleftarrow \textrm{threshold}(A_k^{\top}Y)</script>
+
+<script type="math/tex; mode=display">A_{k+1} \longleftarrow A_{k} - \eta \underbrace{\frac{\partial }{\partial A} f(A_k,X_{k+1})}_{G_k}</script>
+
+<p>Here update for $X$ is the projection pursuit algorithm in sparse recovery (see <a href="http://www.springer.com/us/book/9781441970107">Elad’10</a> for background), which is supposed to give an approximation of the best fit for $X$ given the current $A$.</p>
+
+<p>Sometimes alternating minimization algorithms need careful initialization, but in practice here it suffices to initialize $A_0$ using a random sample of datapoints $y_i$’s.</p>
+
+<p>However, it remains an open problem to analyse convergence using such random initialization; our analysis uses a special starting point $A_0$ found using spectral methods.</p>
+
+<h3 id="applying-our-framework">Applying our framework</h3>
+
+<p>At first glance, the mysterious aspect of our framework was how the algorithm can find an update direction correlating with $z_k -z^* $,  without knowing $z^* $? In context of sparse coding, this comes about as follows:  if we assume a probabilistic generative model for the observed data (namely, it was generated using some ground-truth sparse coding) then the alternating minimization automatically comes up with such  update directions!</p>
+
+<p>Specifically, we will assume that the data points $y_i$’s are generated using some ground truth dictionary $A^* $ 
+ using some ground truth $X^* $ whose columns are iid draws from some suitable distribution.
+ (One needs to assume some conditions on $A^* , X^* $, which  are not important in the sketch below.)  Note that the 
+ entries within each column of $X^* $  are <em>not</em> mutually independent, otherwise the problem would be <a href="https://en.wikipedia.org/wiki/Independent_component_analysis">Independent Component Analysis</a>.</p>
+
+<p>In line with our framework, we consider the Lyapunov function $V(A) = |A-A^* |_F^2$. Here the Frobenius norm $|\cdot|_F$ is also the Euclidean norm of the vectorized version of the matrix. Then our framework implies that to show quick convergence it suffices to verify the following (for some $\alpha,\beta &gt; 0$)	 for the update direction $G_k$:</p>
+
+<script type="math/tex; mode=display">\langle G_k, A_k-A^* \rangle \ge \alpha \|A_k - A^* \|_F^2 + \beta \|G_k\|_F^2 -\epsilon_k</script>
+
+<p>In <a href="http://arxiv.org/abs/1503.00778">AGMM’15</a> we showed that under certain assumption on the true dictionary $A^* $ and the true coefficient $X^* $, the above inequality is indeed true with small $\epsilon_k$ and some constant $\alpha,\beta &gt; 0$. The proof is a bit technical but reasonable — the partial gradient $\frac{\partial f}{\partial A}$ has a simple form and therefore $G_k$ has a closed form in $A_k$ and $Y$. Therefore, it boils down to plugging in the form of $G_k$ into the equation above and simplifying it appropriately.  (One also needs the fact that
+the starting $A_0$ obtained using spectral methods is somewhat close to $A^* $.)</p>
+
+<p>We hope others will use our framework to analyse other nonconvex problems!</p>
+
+<p><em>(Aside: We hope that readers will leave comments if they know of other frameworks for proving convergence that are not subcases of the above framework.)</em></p>
+
+
+</article>
+
+<div class="generic-box">
+Subscribe to our <a href="/feed.xml">RSS feed</a>.
+
+  <div class="share-page">
+<div class="share-links" style="text-align:center;">
+  Spread the word:   
+    
+      <a class = "fa fa-facebook" href="https://facebook.com/sharer.php?u=http://localhost:4000/2016/05/08/almostconvexitySATM/" rel="nofollow" target="_blank" title="Share on Facebook"></a>
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=A Framework for analysing Non-Convex Optimization&url=http://localhost:4000/2016/05/08/almostconvexitySATM/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+      <a class="fa fa-google-plus" href="https://plus.google.com/share?url=http://localhost:4000/2016/05/08/almostconvexitySATM/" rel="nofollow" target="_blank" title="Share on Google+"></a>
+    
+
+    
+      <a class="fa fa-linkedin" href="http://www.linkedin.com/shareArticle?url=http://localhost:4000/2016/05/08/almostconvexitySATM/&title=A Framework for analysing Non-Convex Optimization" rel="nofollow" target="_blank" title="Share on LinkedIn"></a>
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://localhost:4000/2016/05/08/almostconvexitySATM/&title=A Framework for analysing Non-Convex Optimization" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+
+    
+      <a class = "fa fa-hacker-news" onclick="parent.postMessage('submit','*')" href="https://news.ycombinator.com/submitlink?u=http://localhost:4000/2016/05/08/almostconvexitySATM/&t=A Framework for analysing Non-Convex Optimization" rel="nofollow" target="_blank" title="Share on Hacker News"></a>
+    
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+  <h1>Comments</h1>
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'offconvex';
+    var disqus_identifier = '/2016/05/08/almostconvexitySATM';
+    var disqus_title      = 'A Framework for analysing Non-Convex Optimization';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme available on <a href="https://github.com/johnotander/pixyll">Github</a>.
+    </small>
+  </div>
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-70478681-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</footer>
+
+  
+  
+</body>
+</html>
