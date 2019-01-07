@@ -8,6 +8,99 @@
     
      
       <item>
+        <title>The search for biologically plausible neural computation&amp;#58; Non-negative similarity-based networks for clustering and manifold tiling</title>
+        <description>&lt;p&gt;In the &lt;a href=&quot;http://www.offconvex.org/2018/12/03/MityaNN2/&quot;&gt;previous post&lt;/a&gt; of this series, we introduced novel biologically-plausible neural networks (NNs) the operation of which, including both neural activity dynamics and local synaptic learning rules, is derived by optimizing a similarity-based objective. When the output of such NNs is constrained to be non-negative as suggested by biology, they empirically solve interesting tasks such as clustering and manifold learning. But finding the optimal solution for a constrained similarity-based objective is often challenging similarly to that for the non-negative matrix factorization problem.&lt;/p&gt;
+
+&lt;p&gt;Here, we introduce a simplified similarity-based objective that allows us to make progress with the analysis and admits an intuitive interpretation. First, we address the simpler clustering task which, for highly segregated data, has a straightforward optimal solution. Second, we address manifold learning by viewing it as a soft-clustering problem. Finally, we discuss evidence from the brain and remaining open questions.&lt;/p&gt;
+
+&lt;h2 id=&quot;a-similarity-based-cost-function-and-nn-for-clustering&quot;&gt;A similarity-based cost function and NN for clustering&lt;/h2&gt;
+
+&lt;p&gt;The key to our analysis is formulating a similarity-based cost function optimization of which will yield an online algorithm and a NN for clustering. Let ${\bf x}_{t=1,…,T}\in \mathbb{R}^n$ be a set of data points (inputs). We define the similarity of a pair of inputs, ${\bf x}_t$ and ${\bf x} _{t’}$, as their dot-product, ${\bf x}_t^\top {\bf x} _{t’}$. We would like to assign inputs to $k$ clusters based on pairwise similarities, so that the algorithm outputs cluster assignment indices ${\bf y} _{t=1,…,T} \in \mathbb{R}^k$.&lt;/p&gt;
+
+&lt;p&gt;To arrive at a cost function, consider first a single pair of data points, ${\bf x}_1$ and ${\bf x}_2$. If their similarity, ${\bf x} _1^\top {\bf x} _{2} &amp;lt; \alpha$, where $\alpha$ is a pre-set threshold, then the points should be assigned to separate clusters, i.e. ${\bf y} _1 = [1,0]^\top$ and  ${\bf y} _2 = [0,1]^\top$, setting output similarity, ${\bf y} _1^\top{\bf y} _{2}$ to 0. If ${\bf x} _1^\top {\bf x} _{2}&amp;gt;\alpha$, then the points are assigned to the same cluster, e.g. ${\bf y} _1={\bf y} _{2} = [1,0]^\top$. Such ${\bf y} _1$ and ${\bf y} _2$ are optimal solutions (although not unique) to the following optimization problem:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\min_{ {\bf y} _1\geq 0,{\bf y} _2\geq 0 } \left(\alpha-{\bf x} _1^\top {\bf x}_2\right) {\bf y} _1^\top {\bf y} _{2}, \qquad {\rm s.t.} \quad \left\Vert{\bf y} _1\right\Vert _2 \leq 1, \, \left\Vert{\bf y} _{2}\right\Vert _2 \leq 1, \quad (3.1)&lt;/script&gt;
+
+&lt;p&gt;where, in abuse of notation, ${\bf y} _t\geq 0 $  means that every component of the vector ${\bf y} _t$ is nonnegative.&lt;/p&gt;
+
+&lt;p&gt;To obtain an objective function that would cluster the whole dataset of $T$ inputs we simply sum (3.1) over all possible input pairs:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\min_{ {\bf y} _1\geq 0,...,{\bf y} _T\geq 0 } \sum_{t=1}^T\sum_{t'=1}^T\left(\alpha-{\bf x} _t^\top {\bf x} _{t'}\right){\bf y} _t^\top{\bf y} _{t'} \qquad \qquad  \qquad\\
+{\rm s.t.}\quad \left\Vert{\bf y} _1\right\Vert _2\leq 1, \quad\ldots\quad ,\left\Vert{\bf y} _T\right\Vert _2\leq 1.\qquad \qquad (3.2)&lt;/script&gt;
+
+&lt;p&gt;Does optimization of (3.2) produce the desired clustering output? This depends on the dataset. If a threshold, $\alpha$, exists such that the similarities of all pairs within the same cluster are greater and similarities of pairs from different clusters are less than $\alpha$, then the cost function (3.2) is minimized by the desired hard-clustering output, provided that $k$ is greater than or equal to the number of clusters (Figure 1A).&lt;/p&gt;
+
+&lt;p&gt;To solve the objective (3.2) in the online setting, we introduce the constraints in the cost via Lagrange multipliers and using the variable substitution trick from the previous blog post in the series, &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;we can derive a NN implementation of this algorithm&lt;/a&gt; (Figure 1B).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://drive.google.com/uc?export=view&amp;amp;id=1PdNPaWT8Ikdo6uJ_cUOIB6LtOaoCjXEX&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Figure 1:  A) An artificial dataset and corresponding optimal output vectors. Points are colored and grouped with respect to assigned clusters.  B) A biologically-plausible excitatory-inhibitory NN implementation of the algorithm. &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;In this version&lt;/a&gt;, anti-Hebbian synapses operate at a faster time scale than Hebbian synapses.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;manifold-tiling-solutions&quot;&gt;Manifold-tiling solutions&lt;/h2&gt;
+
+&lt;p&gt;In many real-world problems, data points are not well-segregated but lie on low-dimensional manifolds. For such data, &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;the optimal solution of the objective (3.2) effectively tiles the  data manifold&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;We can understand such optimal solutions using soft-clustering, i.e. clustering where each stimulus may be assigned to more than one cluster and assignment indices are real numbers between zero and one. Each output neuron is characterized by the weight vector of incoming synapses which defines a centroid in the input data space. The response of a neuron is maximum when data fall on the centroid and decays away from it. Manifold-tiling solutions for several datasets are shown in Figure 2.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://drive.google.com/uc?export=view&amp;amp;id=1eWZ-63hxp1yiSVqCa4qnJ20Uspi5FVxi&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Figure 2:  &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;Analytical and numerical manifold-tiling solutions of (3.2) for representative datasets provide accurate and useful representations.&lt;/a&gt; A) A circular manifold (left) is tiled by  overlapping localized receptive fields (right). In the continuum limit ($k\rightarrow \infty$), receptive fields are truncated cosines of the polar angle, $\theta$. B) Similar analytical and numerical results are obtained for a spherical 3D manifold. We show a few receptive fields in different colors over three different views of the spherical manifold.  C) Learning the manifold of the 0 digit from the MNIST dataset by tiling the manifold with
+overlapping localized receptive fields. Left: Two-dimensional linear embedding (PCA) of the outputs. The data gets organized according to different visual characteristics
+of the hand-written digit (e.g., orientation and elongation). Right: A few receptive fields in different colors over the low-dimensional embedding.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;We can prove this result analytically by taking advantage of the convex formulation in the limit of infinite $k$. Indeed, if we introduce Gramians ${\bf D}$, such that $D _{tt’}={\bf x} _t^\top {\bf x} _{t’}$, and ${\bf Q}$, such that $Q _{tt’}= {\bf y} _t^\top {\bf y} _{t’}$ and do not specify the dimensionality of ${\bf y}$ by leaving the rank of ${\bf Q}$ open, we can rewrite (3.2) as:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\min_{ {\bf Q}\in \mathcal{CP}^T ,\, {\rm diag}{\bf Q} \le{\bf 1} }
+ -{\rm Tr}(({\bf D}-\alpha {\bf E}){\bf Q}). \qquad (3.3)&lt;/script&gt;
+
+&lt;p&gt;where a $T\times T$ matrix belongs to a &lt;a href=&quot;https://books.google.com/books/about/Completely_Positive_Matrices.html?id=d3JpDQAAQBAJ&quot;&gt;&lt;em&gt;completely positive&lt;/em&gt;&lt;/a&gt; cone denoted by $\mathcal{CP}^T$, i.e. ${\bf Q}\equiv{\bf Y}^\top{\bf Y}$ with ${\bf Y}\ge 0$.  Redefining the variables makes the optimization problem convex. For arbitrary datasets, &lt;a href=&quot;https://books.google.com/books/about/Completely_Positive_Matrices.html?id=d3JpDQAAQBAJ&quot;&gt;optimization problems in $\mathcal{CP}^T$ are often intractable for large $T$&lt;/a&gt;, despite the convexity. &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;However, for symmetric datasets, i.e. circle, 2-sphere and SO(3), we can optimize (3.3) by analyzing the  Karush–Kuhn–Tucker conditions&lt;/a&gt; (Figure 2).&lt;/p&gt;
+
+&lt;h2 id=&quot;other-similarity-based-nn-approaches-to-clustering-and-manifold-tiling&quot;&gt;Other similarity-based NN approaches to clustering and manifold-tiling&lt;/h2&gt;
+
+&lt;p&gt;While we chose to present our similarity-based NN approach through the cost function in (3.2), similar results can be obtained for other versions of similarity-based clustering objective functions. The nonnegative similarity-matching cost function Eq. (2.10) introduced in the &lt;a href=&quot;http://www.offconvex.org/2018/12/03/MityaNN2/&quot;&gt;previous post&lt;/a&gt; of this series, and the NN derived from it (Figure 3A) can be used for clustering (see &lt;a href=&quot;https://www.cc.gatech.edu/~hpark/papers/DaDingParkSDM12.pdf&quot;&gt;here&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1503.00680&quot;&gt;here&lt;/a&gt;) and &lt;a href=&quot;http://papers.nips.cc/paper/7939-manifold-tiling-localized-receptive-fields-are-optimal-in-similarity-preserving-neural-networks&quot;&gt;manifold learning&lt;/a&gt; as well. &lt;a href=&quot;https://www.biorxiv.org/content/early/2018/01/27/226746&quot;&gt;The $k$-means cost function can be cast into a similarity-based form and an NN (Figure 3B) can be derived for its online implementation&lt;/a&gt;. Finally, all these NNs here can be augmented by an initial &lt;a href=&quot;https://papers.nips.cc/paper/3628-kernel-methods-for-deep-learning&quot;&gt;random, nonlinear projection layer&lt;/a&gt; to &lt;a href=&quot;https://www.researchgate.net/publication/320165071_Neural_Networks_for_Efficient_Nonlinear_Online_Clustering&quot;&gt;perform clustering in the feature space associated with certain kernels&lt;/a&gt;  (Figure 3C).&lt;/p&gt;
+
+&lt;p&gt;Objective (3.2) is related to the previously studied convex relaxation of community detection in graphs (see &lt;a href=&quot;https://arxiv.org/abs/1406.5647&quot;&gt;here&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1404.6000&quot;&gt;here&lt;/a&gt;), which is closely related to clustering. If, instead of the nonnegativity of ${\bf Y}$ we require the nonnegativity of ${\bf Q}$ we arrive at an semidefinite programming formulation:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\min_{ {\bf Q} \succeq 0,  \, {\bf Q}\geq 0, \, {\rm diag}{\bf Q} \le{\bf 1} } -{\rm Tr} (({\bf D}-\alpha {\bf E}){\bf Q}). \qquad\quad (3.4)&lt;/script&gt;
+
+&lt;p&gt;Finally, we introduced a soft-$k$-means cost, also a relaxation of another semidefinite program for clustering (see &lt;a href=&quot;http://www.cs.utexas.edu/users/ai-lab/pubs/kernel-kdd-05.pdf&quot;&gt;here&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1408.4045&quot;&gt;here&lt;/a&gt;), and an &lt;a href=&quot;https://www.biorxiv.org/content/early/2018/01/27/226746&quot;&gt;associated NN&lt;/a&gt; (Figure 3B), and &lt;a href=&quot;http://jmlr.org/papers/volume19/18-088/18-088.pdf&quot;&gt;showed that they can perform manifold tiling&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://drive.google.com/uc?export=view&amp;amp;id=1vZdXpUY8eOcCRaLd_bBdol0tEUH-XV4H&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Figure 3:  Other biologically-plausible NNs for clustering and manifold learning. A) Nonnegative similarity matching network, also introduced in the previous blog post. B) Hard and soft $k$-means networks. Rectified neurons are perfect (hard $k$-means) or leaky (soft $k$-means) integrators. They have learned (homeostatic) activation thresholds and ephaptic couplings. C) When augmented with a hidden nonlinear layer, the presented networks perform clustering in the nonlinear feature space. Shown is the NN given &lt;a href=&quot;https://www.researchgate.net/publication/320165071_Neural_Networks_for_Efficient_Nonlinear_Online_Clustering&quot;&gt;here&lt;/a&gt;, where the hidden layer is formed of &lt;a href=&quot;https://papers.nips.cc/paper/3182-random-features-for-large-scale-kernel-machines&quot;&gt;Random Fourier Features&lt;/a&gt; to obtain a low-rank approximation to a Gaussian kernel. Hence, the whole two-layer NN operates as an online kernel clustering algorithm.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;manifold-tiling-and-clustering-in-the-brain&quot;&gt;Manifold-tiling and clustering in the brain&lt;/h2&gt;
+
+&lt;p&gt;Similarity-based networks were originally introduced to model brain function. Indeed, clustering and manifold learning are encountered in the brain. Although sensory stimuli are nominally very high-dimensional (up to $\sim 10^{5-6}$) natural stimuli often populate low-dimensional manifolds. Learning such manifolds is essential for avoiding the curse of dimensionality. In many brain areas, neurons collectively tile the stimulus manifold, each responding only to a small neighborhood of the stimulus space.  For example, a hippocampus place cell is &lt;a href=&quot;http://www.cognitivemap.net/HCMpdf/HCMComplete.pdf&quot;&gt;active in a particular spatial location&lt;/a&gt;  (Figure 4), the response of a V1 neuron is &lt;a href=&quot;https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1359523/pdf/jphysiol01247-0121.pdf&quot;&gt;localized in visual space and orientation&lt;/a&gt;, and the response of an auditory neuron is &lt;a href=&quot;http://science.sciencemag.org/content/202/4369/778.long&quot;&gt;localized in the sound frequency space&lt;/a&gt;. Further, all these responses are learned in an activity-dependent manner and can be shaped by varying stimulus statistics and perturbing neural activity.&lt;/p&gt;
+
+&lt;p&gt;Olfactory object recognition in insects &lt;a href=&quot;https://www.biorxiv.org/content/early/2018/01/27/226746&quot;&gt;can be modeled by a clustering network&lt;/a&gt;, (Figure 3B).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://upload.wikimedia.org/wikipedia/commons/5/5e/Place_Cell_Spiking_Activity_Example.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Figure 4:  Illustration of place cells from &lt;a href=&quot;https://en.wikipedia.org/wiki/Place_cell&quot;&gt;Wikipedia&lt;/a&gt;: ``Spatial firing patterns of 8 place cells recorded from the CA1 layer of a rat. The rat ran back and forth along an elevated track, stopping at each end to eat a small food reward. Dots indicate positions where action potentials were recorded, with color indicating which neuron emitted that action potential.”&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;remaining-challenges&quot;&gt;Remaining challenges&lt;/h2&gt;
+
+&lt;p&gt;As discussed in this and previous posts of the series, similarity-based NNs can solve unsupervised tasks such as dimensionality reduction, clustering and manifold learning in a biologically plausible way. Yet, despite these successes of similarity-based NNs, many interesting challenges remain. Next, we list a few of them.&lt;/p&gt;
+
+&lt;p&gt;Whereas numerical experiments indicate that our online algorithms perform well, most of them lack  global convergence proofs. Even for PCA networks we can only prove linear stability of the desired solution in the stochastic approximation setting.&lt;/p&gt;
+
+&lt;p&gt;Motivated by biological learning which is mostly unsupervised we focused on unsupervised learning. Yet, supervision or reinforcement takes place in the brain. Therefore, it is desirable to extend our framework to supervised, semi-supervised and reinforcement learning settings. Naturally, such extensions may be valuable also as general purpose machine learning algorithms.&lt;/p&gt;
+
+&lt;p&gt;Whereas most sensory stimuli are correlated time series, we assumed that data points at different times are independent. How are temporal correlations analyzed by NNs? Solving this problem is important both for modeling brain function and developing general purpose machine learning algorithms.&lt;/p&gt;
+
+&lt;p&gt;Another challenge is stacking similarity-based NNs. &lt;a href=&quot;https://arxiv.org/abs/1702.06456&quot;&gt;Heuristic approach to stacking yields promising results&lt;/a&gt;. Yet, except for the Nonnegative ICA problem introduced in the &lt;a href=&quot;http://www.offconvex.org/2018/12/03/MityaNN2/&quot;&gt;previous post&lt;/a&gt;, we do not have a theoretical understanding of how and why to stack similarity-based NNs.&lt;/p&gt;
+
+&lt;p&gt;Finally, neurons in biological NNs signal each other using all-or-none spikes, or action potentials, as opposed to real-valued signals we considered. Is there a  normative theory accounting for spiking in biological NNs?&lt;/p&gt;
+</description>
+        <pubDate>Sun, 06 Jan 2019 02:45:00 -0800</pubDate>
+        <link>http://localhost:4000/2019/01/06/MityaNN3/</link>
+        <guid isPermaLink="true">http://localhost:4000/2019/01/06/MityaNN3/</guid>
+      </item>
+     
+    
+     
+      <item>
         <title>The search for biologically plausible neural computation&amp;#58; A similarity-based approach</title>
         <description>&lt;p&gt;This is the second post in a series reviewing recent progress in designing artificial neural networks (NNs) that resemble natural NNs not just superficially, but on a deeper, algorithmic level. In addition to serving as models of natural NNs, such networks can serve as general-purpose machine learning algorithms. Respecting biological constraints, viewed  naively as a handicap in developing competitive general-purpose machine learning algorithms, can instead facilitate the development of artificial NNs by restricting the search space of possible algorithms.&lt;/p&gt;
 
@@ -1144,101 +1237,6 @@ The reason this is the Lipschitz constant is that if an input $x$ is presented a
         <pubDate>Sat, 17 Feb 2018 08:00:00 -0800</pubDate>
         <link>http://localhost:4000/2018/02/17/generalization2/</link>
         <guid isPermaLink="true">http://localhost:4000/2018/02/17/generalization2/</guid>
-      </item>
-     
-    
-     
-      <item>
-        <title>Generalization Theory and Deep Nets, An introduction</title>
-        <description>&lt;p&gt;Deep learning holds many mysteries for theory, as we have discussed on this blog. Lately many ML theorists have become interested in the generalization mystery: why do trained deep nets perform well on previously unseen data, even though they have way more free parameters than the number of datapoints (the classic “overfitting” regime)? Zhang et al.’s  paper  &lt;a href=&quot;https://arxiv.org/abs/1611.03530&quot;&gt;Understanding Deep Learning requires Rethinking Generalization&lt;/a&gt; played some role in bringing attention to this challenge. Their  main experimental finding is that if you take a classic convnet architecture, say &lt;a href=&quot;https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf&quot;&gt;Alexnet&lt;/a&gt;, and train it on  images with random labels, then you can still achieve very high accuracy on the training data. (Furthermore, usual regularization strategies, which are believed to promote better generalization, do not help much.) Needless to say, the trained net is subsequently unable to predict the (random) labels of still-unseen images, which means it doesn’t generalize. The paper notes that the ability to fit a classifier to data with random labels is also a traditional measure in machine learning called Rademacher complexity (which we will discuss shortly) and thus Rademacher complexity gives no meaningful bounds on sample complexity.  I found this paper entertainingly written and recommend reading it, despite having given away the punchline. Congratulations to the authors for winning best paper at ICLR 2017.&lt;/p&gt;
-
-&lt;p&gt;But I would be remiss if I didn’t report that at the &lt;a href=&quot;https://simons.berkeley.edu/programs/machinelearning2017&quot;&gt;Simons Institute Semester on theoretical ML in spring 2017&lt;/a&gt; generalization theory experts expressed unhappiness about this paper, and especially its title. They felt that similar issues had been extensively studied  in context of simpler models such as kernel SVMs (which, to be fair, is clearly mentioned in the paper). It is trivial to design SVM architectures with high Rademacher complexity which nevertheless train and generalize well on real-life data. Furthermore, theory was developed to explain this generalization behavior (and also for related models like boosting). On a related note, several earlier papers of Behnam Neyshabur and coauthors (see &lt;a href=&quot;https://arxiv.org/abs/1605.07154&quot;&gt;this paper&lt;/a&gt; and for a full account, &lt;a href=&quot;https://arxiv.org/abs/1703.11008&quot;&gt;Behnam’s thesis&lt;/a&gt;)
-had made points fairly similar to Zhang et al. pertaining to deep nets.&lt;/p&gt;
-
-&lt;p&gt;But regardless of such complaints, we should be happy about the attention brought by Zhang et al.’s paper to a core theory challenge. Indeed, the passionate discussants at the Simons semester themselves banded up in  subgroups to address this challenge: these resulted in papers by &lt;a href=&quot;https://arxiv.org/abs/1703.11008&quot;&gt;Dzigaite and Roy&lt;/a&gt;, then &lt;a href=&quot;https://arxiv.org/abs/1706.08498&quot;&gt;Bartlett, Foster, and Telgarsky&lt;/a&gt; and finally &lt;a href=&quot;https://arxiv.org/abs/1707.09564&quot;&gt;Neyshabur, Bhojapalli, MacAallester, Srebro&lt;/a&gt;. (The latter two were presented at NIPS’17 this week.)&lt;/p&gt;
-
-&lt;p&gt;Before surveying these results let me start by suggesting that some of the controversy over the title of Zhang et al.’s paper stems from some basic confusion about whether or not current generalization theory is prescriptive or merely descriptive. These confusions  arise from the standard treatment of generalization theory in courses and textbooks, as I discovered while teaching the recent developments in &lt;a href=&quot;http://www.cs.princeton.edu/courses/archive/fall17/cos597A/&quot;&gt;my graduate seminar&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h3 id=&quot;prescriptive-versus-descriptive-theory&quot;&gt;Prescriptive versus descriptive theory&lt;/h3&gt;
-
-&lt;p&gt;To illustrate the difference, consider a patient who says to his doctor: “Doctor, I wake up often at night and am tired all day.”&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Doctor 1 (without any physical examination): “Oh, you have sleep disorder.”&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I call such a diagnosis &lt;em&gt;descriptive&lt;/em&gt;, since it only attaches a label to the patient’s problem, without giving any insight into how to solve the problem. Contrast with:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Doctor 2 (after careful physical examination): “A growth in your sinus is causing sleep apnea. Removing it will resolve your problems.”&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Such a diagnosis is &lt;em&gt;prescriptive.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;generalization-theory-descriptive-or-prescriptive&quot;&gt;Generalization theory: descriptive or prescriptive?&lt;/h2&gt;
-
-&lt;p&gt;Generalization theory notions such as VC dimension, Rademacher complexity, and PAC-Bayes bound, consist of attaching a &lt;em&gt;descriptive label&lt;/em&gt; to the basic phenomenon of lack of generalization. They are hard to compute for today’s complicated ML models, let alone to use as a guide in designing learning systems.&lt;/p&gt;
-
-&lt;p&gt;Recall what it means for a hypothesis/classifier $h$ to not generalize. Assume the training data consists of a sample $S = {(x_1, y_1), (x_2, y_2),\ldots, (x_m, y_m)}$ of $m$ examples from some distribution ${\mathcal D}$. A &lt;em&gt;loss function&lt;/em&gt; $\ell$ describes how well hypothesis $h$ classifies a datapoint: the loss $\ell(h, (x, y))$ is high if the hypothesis didn’t come close to producing the label $y$ on $x$ and low if it came close.  (To give an example,  the &lt;em&gt;regression&lt;/em&gt; loss is $(h(x) -y)^2$.) Now let us denote by $\Delta_S(h)$ the average loss on samplepoints in $S$, and by $\Delta_{\mathcal D}(h)$ the expected loss on samples from distribution ${\mathcal D}$. 
-Training  &lt;em&gt;generalizes&lt;/em&gt; if the hypothesis $h$ that minimises $\Delta_S(h)$ for a random sample $S$ also achieves very similarly low loss $\Delta_{\mathcal D}(h)$ on the full distribution. When this fails to happen, we have:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&lt;strong&gt;Lack of generalization:&lt;/strong&gt;  $\Delta_S(h) \ll \Delta_{\mathcal D}(h) \qquad (1). $&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;In practice, lack of generalization is detected by taking a second sample
- (“held out set”) $S_2$ of size $m$ from ${\mathcal D}$. By concentration bounds expected loss of $h$ on this second sample closely approximates $\Delta_{\mathcal D}(h)$, allowing us to conclude&lt;/p&gt;
-
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\Delta_S(h) - \Delta_{S_2}(h) \ll 0 \qquad (2).&lt;/script&gt;
-
-&lt;h3 id=&quot;generalization-theory-descriptive-parts&quot;&gt;Generalization Theory: Descriptive Parts&lt;/h3&gt;
-
-&lt;p&gt;Let’s discuss &lt;strong&gt;Rademacher complexity,&lt;/strong&gt; which I will simplify a bit for this discussion. (See also  &lt;a href=&quot;http://www.cs.princeton.edu/courses/archive/fall17/cos597A/lecnotes/generalize.pdf&quot;&gt;scribe notes of my lecture&lt;/a&gt;.) For convenience assume in this discussion that labels and loss are $0,1$, and 
- assume that the badly generalizing $h$ predicts perfectly on the training sample $S$ and is completely wrong on the heldout set $S_2$, meaning&lt;/p&gt;
-
-&lt;p&gt;$\Delta_S(h) - \Delta_{S_2}(h) \approx - 1 \qquad (3)$&lt;/p&gt;
-
-&lt;p&gt;Rademacher complexity concerns the following thought experiment. Take a single sample of size $2m$   from $\mathcal{D}$, split it into two and call the first half $S$ and the second $S_2$. &lt;em&gt;Flip&lt;/em&gt; the labels of points in $S_2$. Now try to find a classifier $C$ that best describes this new sample, meaning one that minimizes $\Delta_S(h)  + 1- \Delta_{S_2}(h)$. This expression follows since flipping the label of a point turns good classification into bad and vice versa, and thus the loss function for $S_2$ is $1$ minus the old loss. We say the class of classifiers has high Rademacher complexity if with high probability this quantity is small, say close to $0$.&lt;/p&gt;
-
-&lt;p&gt;But a glance  at (3) shows that it implies high Rademacher complexity: $S, S_2$ were random samples of size $m$  from $\mathcal{D}$, so their combined size is $2m$, and when generalization failed we succeeded in finding a hypothesis $h$ for which $\Delta_S(h)  + 1- \Delta_{S_2}(h)$ is very small.&lt;/p&gt;
-
-&lt;p&gt;In other words, returning to our medical analogy, the doctor only had to hear “Generalization didn’t happen” to pipe up with: “Rademacher complexity is high.” This is why I call this result descriptive.&lt;/p&gt;
-
-&lt;p&gt;The &lt;strong&gt;VC dimension&lt;/strong&gt; bound is similarly descriptive.  VC dimension is defined to be at least $k +1$ if there exists a set of size $k$ such that the following is true. If we look at all possible classifiers in the class, and the sequence of labels each gives to the $k$ datapoints in the sample, then we can find all possible $2^{k}$ sequences of $0$’s and $1$’s.&lt;/p&gt;
-
-&lt;p&gt;If generalization does not happen as in (2) or (3) then this turns out to imply that VC dimension is at least around $\epsilon m$ for some $\epsilon &amp;gt;0$. The reason is that the $2m$ data points were split randomly into $S, S_2$, and there are $2^{2m}$ such splittings. When the generalization error is $\Omega(1)$ this can be shown to imply that we can achieve  $2^{\Omega(m)}$ labelings of the $2m$ datapoints using all possible classifiers. Now the classic Sauer’s lemma (see any lecture notes on this topic, such as &lt;a href=&quot;https://www.cs.princeton.edu/courses/archive/spring14/cos511/scribe_notes/0220.pdf&quot;&gt;Schapire’s&lt;/a&gt;) can be used to show that
- VC dimension is at least $\epsilon m/\log m$ for some constant $\epsilon&amp;gt;0$.&lt;/p&gt;
-
-&lt;p&gt;Thus again, the doctor only has to hear “Generalization didn’t happen with sample size $m$” to pipe up with: “VC dimension is higher than $\Omega(m/log m)$.”&lt;/p&gt;
-
-&lt;p&gt;One can similarly show that PAC-Bayes bounds are also descriptive, as you can see in &lt;a href=&quot;http://www.cs.princeton.edu/courses/archive/fall17/cos597A/lecnotes/generalize.pdf&quot;&gt;scribe notes from my lecture&lt;/a&gt;.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Why do students get confused and think that such tools of generalization theory gives some powerful technique to guide design of machine learning algorithms?&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Answer: Probably because  standard presentation in lecture notes and textbooks seems to pretend that we are computationally-omnipotent beings who can &lt;em&gt;compute&lt;/em&gt; VC dimension and Rademacher complexity and thus arrive at meaningful bounds on sample sizes needed for training to generalize. While this may have been possible in the old days with simple classifiers, today we have
-complicated classifiers with millions of variables, which furthermore are products of  nonconvex optimization techniques like backpropagation. 
- The only way to actually lowerbound Rademacher complexity of such complicated learning architectures is to try training a classifier, and detect lack of generalization via a held-out set. Every practitioner in the world already does this (without realizing it), and  kudos to Zhang et al. for highlighting that theory currently offers nothing better.&lt;/p&gt;
-
-&lt;h2 id=&quot;toward-a-prescriptive-generalization-theory-the-new-papers&quot;&gt;Toward a prescriptive generalization theory: the new papers&lt;/h2&gt;
-
-&lt;p&gt;In our medical analogy we saw that the doctor needs to at least do a physical examination to have a prescriptive diagnosis. The authors of the new papers intuitively grasp this point, and try to identify properties of real-life deep nets that may lead to better generalization. Such an analysis (related to “margin”) was done for simple 2-layer networks couple decades ago, and the challenge is to find analogs for multilayer networks. Both Bartlett et al. and Neyshabur et al. hone in on &lt;a href=&quot;https://nickhar.wordpress.com/2012/02/29/lecture-15-low-rank-approximation-of-matrices/&quot;&gt;&lt;em&gt;stable rank&lt;/em&gt;&lt;/a&gt; of the weight matrices of the layers of the deep net. These can be seen as an instance of a “flat minimum” which has been discussed in &lt;a href=&quot;http://www.bioinf.jku.at/publications/older/3304.pdf&quot;&gt;neural nets literature&lt;/a&gt; for many years. I will present my take on these results as well as some improvements in a future post. Note that these methods do not as yet give any nontrivial bounds on the number of datapoints needed for training the nets in question.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://arxiv.org/abs/1703.11008&quot;&gt;Dziugaite and Roy&lt;/a&gt; take a slightly different tack. They start with McAllester’s 1999 PAC-Bayes bound, which says that if the algorithm’s prior distribution on the hypotheses is $P$ then for every posterior distributions $Q$ (which could depend on the data) on the hypotheses the generalization error of the average classifier picked according to $Q$ is upper bounded as follows where $D()$ denotes &lt;a href=&quot;https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence&quot;&gt;KL divergence&lt;/a&gt;:&lt;/p&gt;
-
-&lt;div style=&quot;text-align:center;&quot;&gt;
- &lt;img style=&quot;width:600px;&quot; src=&quot;http://www.cs.princeton.edu/courses/archive/fall17/cos597A/lecnotes/pacbayes.png&quot; /&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This allows upperbounds on generalization error (specifically, upperbounds on number of samples that guarantee such an upperbound) by proceeding as in  &lt;a href=&quot;http://www.cs.cmu.edu/~jcl/papers/nn_bound/not_bound.pdf&quot;&gt;Langford and Caruana’s old paper&lt;/a&gt; where $P$ is a uniform gaussian, and $Q$ is a noised version of the trained deep net (whose generalization we are trying to explain). Specifically, if $w_{ij}$ is the weight of edge ${i, j}$ in the trained net, then $Q$ consists of adding a gaussian noise $\eta_{ij}$ to weight $w_{ij}$. Thus a random classifier according to $Q$ is nothing but a noised version of the trained net. Now we arrive at the crucial idea: Use nonconvex optimization to find a choice for the variance of $\eta_{ij}$ that balances two competing criteria: (a) the average classifier drawn from $Q$ has training error not much more than the original trained net (again, this is a quantification of the “flatness” of the minimum found by the optimization) and (b) the right hand side of the above expression is as small as possible.  Assuming (a) and (b) can be suitably bounded, it follows that the average classifier from Q works reasonably well on unseen data.  (Note that this method only proves generalization of a noised version of the trained classifier.)&lt;/p&gt;
-
-&lt;p&gt;Applying this method on  simple fully-connected neural nets trained on MNIST dataset, they can prove that the method achieves error $17$ percent error on MNIST (whereas the &lt;em&gt;actual&lt;/em&gt; error is much lower at 2-3 percent). Hence the title of their paper, which promises &lt;em&gt;nonvacuous generalization bounds.&lt;/em&gt; What I find most interesting about this result is that it uses the power of nonconvex optimization (harnessed above to find a suitable noised distribution $Q$) to cast light on one of the metaquestions about nonconvex optimization, namely, why does deep learning not overfit!&lt;/p&gt;
-
-</description>
-        <pubDate>Fri, 08 Dec 2017 10:00:00 -0800</pubDate>
-        <link>http://localhost:4000/2017/12/08/generalization1/</link>
-        <guid isPermaLink="true">http://localhost:4000/2017/12/08/generalization1/</guid>
       </item>
      
     
